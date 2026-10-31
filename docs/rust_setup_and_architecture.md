@@ -79,19 +79,23 @@ const netCashFlow = calc.get_results("stakeholders/results/private_cash_flow_net
 ```
 
 ### 2.3 JavaScript / TypeScript API Reference & Error Handling
-All methods validate ID existence and throw standard JavaScript `Error` exceptions upon receiving unknown or invalid IDs.
+All methods validate input structure and ID existence, throwing standard JavaScript `Error` exceptions upon receiving unknown or invalid keys.
 
 | Method | TypeScript Signature | Description |
 | :--- | :--- | :--- |
 | `Calculator.new` | `(startYear: number, endYear: number) => Calculator` | Constructs and initializes the simulation engine over the specified year range. |
-| `set_input` | `(id: string, value: number) => void` | Sets the start-year baseline value for the given input ID. Throws `Error` if ID not found. |
-| `get_input` | `(id: string) => number` | Retrieves the start-year baseline value. Throws `Error` if ID not found. |
-| `get_input_values` | `(id: string) => Float64Array` | Retrieves the entire time-series array of input values. Throws `Error` if ID not found. |
-| `new_measure` | `(id: string, inputId: string, startYear: number, endYear: number, delta: number) => void` | Adds an intervention measure applied linearly over `[startYear, endYear]`. Throws `Error` if input ID not found. |
-| `update_measure` | `(id: string, inputId: string, startYear: number, endYear: number, delta: number) => void` | Updates an existing measure. Throws `Error` if input ID not found. |
-| `delete_measure` | `(id: string, inputId: string) => void` | Deletes a measure and updates the input time-series. Throws `Error` if input ID not found. |
+| **`get_results_object`** | `() => SimulationResults` | **(Recommended)** Returns the entire simulation output tree as a natural, nested JavaScript object with full sector breakdowns. |
+| **`set_inputs`** | `(inputs: object) => void` | **(Recommended)** Sets baseline input variables in bulk using a nested JavaScript object (e.g. `{ buildings: { n_buildings: { private: 44000 } } }`). |
+| **`get_inputs_object`** | `() => SimulationInputs` | Returns the entire input parameter tree as a nested JavaScript object. |
+| **`add_measures`** | `(measures: MeasureInput[]) => void` | Adds multiple climate policy interventions in bulk using an array of measure objects. |
+| `set_input` | `(id: string, value: number) => void` | Sets the start-year baseline value for a specific string ID. |
+| `get_input` | `(id: string) => number` | Retrieves the start-year baseline value for a specific string ID. |
+| `get_input_values` | `(id: string) => Float64Array` | Retrieves the time-series array of input values for a specific string ID. |
+| `new_measure` | `(id: string, inputId: string, startYear: number, endYear: number, delta: number) => void` | Adds a single intervention measure applied linearly over `[startYear, endYear]`. |
+| `update_measure` | `(id: string, inputId: string, startYear: number, endYear: number, delta: number) => void` | Updates an existing measure. |
+| `delete_measure` | `(id: string, inputId: string) => void` | Deletes a measure and recalculates the input time-series. |
 | `calculate_over_years` | `() => void` | Runs the 5-stage simulation pipeline across all configured years. |
-| `get_results` | `(id: string) => Float64Array` | Retrieves annual computed results. Throws `Error` if result ID not found. |
+| `get_results` | `(id: string) => Float64Array` | Retrieves annual computed results for a specific string ID. |
 | `list_input_ids` | `() => string[]` | Returns all available input IDs across all domains. |
 | `list_result_ids` | `() => string[]` | Returns all available result IDs across all domains. |
 | `list_measure_ids` | `() => string[]` | Returns all active measure IDs across all inputs. |
@@ -99,10 +103,14 @@ All methods validate ID existence and throw standard JavaScript `Error` exceptio
 #### Error Handling Example
 ```typescript
 try {
-  calc.set_input("invalid/input/path", 100);
+  calc.set_inputs({
+    buildings: {
+      invalid_var_name: 100
+    }
+  });
 } catch (err) {
   console.error("Simulation configuration error:", err.message);
-  // Output: "Simulation configuration error: Input ID not found: 'invalid/input/path'"
+  // Output: "Simulation configuration error: Input ID not found: 'buildings/inputs/invalid_var_name'"
 }
 ```
 

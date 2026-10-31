@@ -1,5 +1,6 @@
 use wasm_bindgen::prelude::*;
 use serde_wasm_bindgen::to_value;
+use serde::{Serialize, Deserialize};
 
 mod buildings;
 use buildings::Buildings;
@@ -269,6 +270,131 @@ impl Calculator{
         }
         list
     }
+
+    /// Returns all calculated simulation results across all domains and sectors
+    /// as a single, hierarchical JavaScript object.
+    pub fn get_results_object(&self) -> Result<JsValue, JsError> {
+        let results = SimulationResults {
+            start_year: self.start_year,
+            end_year: self.end_year,
+            buildings: &self.buildings.results,
+            energy: &self.energy.results,
+            mobility: &self.mobility.results,
+            economy: &self.economy,
+            stakeholders: &self.stakeholders,
+        };
+        to_value(&results).map_err(|e| JsError::new(&e.to_string()))
+    }
+
+    /// Returns the full input parameter configuration across all domains and sectors
+    /// as a single, hierarchical JavaScript object.
+    pub fn get_inputs_object(&self) -> Result<JsValue, JsError> {
+        let inputs = SimulationInputs {
+            start_year: self.start_year,
+            end_year: self.end_year,
+            buildings: &self.buildings.inputs,
+            energy: &self.energy.inputs,
+            mobility: &self.mobility.inputs,
+        };
+        to_value(&inputs).map_err(|e| JsError::new(&e.to_string()))
+    }
+
+    /// Set input parameters in bulk using a nested JavaScript object.
+    /// Example: { buildings: { n_buildings: { private: 44000.0 }, price_oil__eur_per_L: 0.82 } }
+    pub fn set_inputs(&mut self, inputs: JsValue) -> Result<(), JsError> {
+        let val: serde_json::Value = serde_wasm_bindgen::from_value(inputs)
+            .map_err(|e| JsError::new(&format!("Invalid inputs object: {e}")))?;
+        apply_json_inputs(self, &val)
+    }
+
+    /// Set input parameters in bulk using a JSON string.
+    pub fn set_inputs_json(&mut self, json_str: &str) -> Result<(), JsError> {
+        let val: serde_json::Value = serde_json::from_str(json_str)
+            .map_err(|e| JsError::new(&format!("Invalid JSON: {e}")))?;
+        apply_json_inputs(self, &val)
+    }
+
+    /// Add multiple measures in bulk using an array of measure objects:
+    /// [{ id: "pv_exp", inputId: "energy/inputs/sol_rf_installed__M__Wp/private", startYear: 2024, endYear: 2035, delta: -20.0 }]
+    pub fn add_measures(&mut self, measures: JsValue) -> Result<(), JsError> {
+        let configs: Vec<MeasureConfig> = serde_wasm_bindgen::from_value(measures)
+            .map_err(|e| JsError::new(&format!("Invalid measure configuration: {e}")))?;
+        for m in configs {
+            self.new_measure(&m.id, &m.input_id, m.start_year, m.end_year, m.delta)?;
+        }
+        Ok(())
+    }
+}
+
+#[derive(Serialize)]
+struct SimulationResults<'a> {
+    pub start_year: u32,
+    pub end_year: u32,
+    pub buildings: &'a buildings::ResultsBuildings,
+    pub energy: &'a energy::ResultsEnergy,
+    pub mobility: &'a mobility::ResultsMobility,
+    pub economy: &'a economy::Economy,
+    pub stakeholders: &'a stakeholders::Stakeholders,
+}
+
+#[derive(Serialize)]
+struct SimulationInputs<'a> {
+    pub start_year: u32,
+    pub end_year: u32,
+    pub buildings: &'a buildings::InputsBuildings,
+    pub energy: &'a energy::InputsEnergy,
+    pub mobility: &'a mobility::InputsMobility,
+}
+
+#[derive(Deserialize)]
+struct MeasureConfig {
+    pub id: String,
+    #[serde(alias = "inputId", alias = "input_id")]
+    pub input_id: String,
+    #[serde(alias = "startYear", alias = "start_year")]
+    pub start_year: u32,
+    #[serde(alias = "endYear", alias = "end_year")]
+    pub end_year: u32,
+    pub delta: f64,
+}
+
+fn apply_json_inputs(calc: &mut Calculator, val: &serde_json::Value) -> Result<(), JsError> {
+    if let serde_json::Value::Object(domains) = val {
+        for (domain_name, domain_val) in domains {
+            let vars_obj = if let serde_json::Value::Object(inner) = domain_val {
+                if let Some(inputs_val) = inner.get("inputs") {
+                    inputs_val
+                } else {
+                    domain_val
+                }
+            } else {
+                domain_val
+            };
+
+            if let serde_json::Value::Object(vars) = vars_obj {
+                for (var_name, var_val) in vars {
+                    match var_val {
+                        serde_json::Value::Number(num) => {
+                            if let Some(f) = num.as_f64() {
+                                let id = format!("{domain_name}/inputs/{var_name}");
+                                calc.set_input(&id, f)?;
+                            }
+                        }
+                        serde_json::Value::Object(sectors) => {
+                            for (sector_name, sector_val) in sectors {
+                                if let Some(f) = sector_val.as_f64() {
+                                    let id = format!("{domain_name}/inputs/{var_name}/{sector_name}");
+                                    calc.set_input(&id, f)?;
+                                }
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+            }
+        }
+    }
+    Ok(())
 }
 
 
@@ -322,5 +448,51 @@ mod unit_tests{
         assert!(calculator.set_input("invalid/input/path", 12.0).is_err());
         assert!(calculator.new_measure("m1", "invalid/path", 2023, 2024, 1.0).is_err());
     }
+
+    #[test]
+    fn test_set_inputs_json() {
+        let mut calculator = Calculator::new(2022, 2025);
+        let config = r#"{
+            "buildings": {
+                "n_buildings": {
+                    "private": 44000.0,
+                    "industry": 5180.0
+                },
+                "price_oil__eur_per_L": 0.85
+            },
+            "energy": {
+                "sol_rf_installed__M__Wp": {
+                    "private": 36.26
+                }
+            }
+        }"#;
+        assert!(calculator.set_inputs_json(config).is_ok());
+        assert_eq!(calculator.get_input("buildings/inputs/n_buildings/private").unwrap(), 44000.0);
+        assert_eq!(calculator.get_input("buildings/inputs/n_buildings/industry").unwrap(), 5180.0);
+        assert_eq!(calculator.get_input("buildings/inputs/price_oil__eur_per_L").unwrap(), 0.85);
+        assert_eq!(calculator.get_input("energy/inputs/sol_rf_installed__M__Wp/private").unwrap(), 36.26);
+    }
+
+    #[test]
+    fn test_calculator_results_object_serialization() {
+        let mut calculator = Calculator::new(2022, 2025);
+        calculator.calculate_over_years();
+        let results = SimulationResults {
+            start_year: calculator.start_year,
+            end_year: calculator.end_year,
+            buildings: &calculator.buildings.results,
+            energy: &calculator.energy.results,
+            mobility: &calculator.mobility.results,
+            economy: &calculator.economy,
+            stakeholders: &calculator.stakeholders,
+        };
+        let json = serde_json::to_string(&results).unwrap();
+        assert!(json.contains("buildings"));
+        assert!(json.contains("floor_A__k__m2"));
+        assert!(json.contains("economy"));
+        assert!(json.contains("invest_heating_material"));
+        assert!(json.contains("stakeholders"));
+    }
 }
+
 

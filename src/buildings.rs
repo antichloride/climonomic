@@ -10,7 +10,7 @@ use crate::constants::buildings as constants;
 use crate::constants::energy::evu_discount_heat_pump;
 
 pub struct Buildings {
-    inputs: InputsBuildings,
+    pub inputs: InputsBuildings,
     pub results: ResultsBuildings,
     start_year: u32,
 }
@@ -477,15 +477,16 @@ impl Buildings{
 macro_rules! implement_inputs_buildings{
     ($($field:ident),*) => {
 
-        struct InputsBuildings{
+        #[derive(serde::Serialize)]
+        pub struct InputsBuildings{
             $(
-                $field: SectorsInputs,
+                pub $field: SectorsInputs,
              )*
-            price_oil__eur_per_L: Input,
-            price_gas__eur_per_m3: Input,
-            price_district_heating__m__eur_per_W_h: Input,
-            price_other_output_nrg__m__eur_per_W_h: Input,
-            district_heating_renewable_part: Input,
+            pub price_oil__eur_per_L: Input,
+            pub price_gas__eur_per_m3: Input,
+            pub price_district_heating__m__eur_per_W_h: Input,
+            pub price_other_output_nrg__m__eur_per_W_h: Input,
+            pub district_heating_renewable_part: Input,
         }
 
         impl InputsBuildings{
@@ -591,6 +592,7 @@ implement_inputs_buildings!{
 macro_rules! implement_results_buildings{
     ($($field:ident),*) => {
 
+        #[derive(serde::Serialize)]
         pub struct ResultsBuildings{
             $(
                 pub $field: SectorsResult,

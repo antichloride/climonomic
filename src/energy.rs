@@ -433,6 +433,7 @@ impl Energy{
 macro_rules! implement_inputs_energy{
     ($($field:ident),*) => {
 
+        #[derive(serde::Serialize)]
         pub struct InputsEnergy{
             $(
                 pub $field: SectorsInputs,
@@ -497,6 +498,7 @@ implement_inputs_energy!{
 macro_rules! implement_results_energy{
     ($($field:ident),*) => {
 
+        #[derive(serde::Serialize)]
         pub struct ResultsEnergy{
             $(
                 pub $field: SectorsResult,

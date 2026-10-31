@@ -1,9 +1,20 @@
+use serde::{Serialize, Serializer};
+
 pub struct Input{
     pub id: String,
     values: Vec<f64>,
     pub measures: Vec<Measure>,
     start_year: u32,
     end_year: u32,
+}
+
+impl Serialize for Input {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        self.values.serialize(serializer)
+    }
 }
 
 impl Input{

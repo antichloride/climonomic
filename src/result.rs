@@ -1,8 +1,19 @@
 
+use serde::{Serialize, Serializer};
+
 pub struct Results{
     pub id: String,
     pub values: Vec<f64>,
     start_year: u32,
+}
+
+impl Serialize for Results {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        self.values.serialize(serializer)
+    }
 }
 
 impl Results{

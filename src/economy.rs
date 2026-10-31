@@ -14,7 +14,9 @@ use crate::mobility::Mobility;
 macro_rules! implement_economy{
     ($($field:ident),*) => {
 
+        #[derive(serde::Serialize)]
         pub struct Economy{
+            #[serde(skip)]
             start_year: u32,
             $(
                 pub $field: Results,

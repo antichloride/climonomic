@@ -44,17 +44,31 @@ import { Calculator } from "climcalc-core";
 // 1. Initialize simulation range
 const calc = Calculator.new(2022, 2045);
 
-// 2. Set baseline status quo or scenario parameters
-calc.set_input("buildings/inputs/n_buildings/private", 44000.0);
+// 2. Populate inputs using natural JavaScript objects (or individual string IDs):
+calc.set_inputs({
+  buildings: {
+    n_buildings: { private: 44000.0 },
+    price_oil__eur_per_L: 0.82
+  },
+  energy: {
+    sol_rf_installed__M__Wp: { private: 36.26 }
+  }
+});
 
-// 3. Add intervention measures
-calc.new_measure("solar_expansion", "energy/inputs/sol_rf_installed__M__Wp/private", 2024, 2035, -20.0);
+// 3. Add intervention measures (individually or in bulk)
+calc.add_measures([
+  { id: "solar_expansion", inputId: "energy/inputs/sol_rf_installed__M__Wp/private", startYear: 2024, endYear: 2035, delta: -20.0 }
+]);
 
 // 4. Run multi-stage annual calculation
 calc.calculate_over_years();
 
-// 5. Query annual time-series outputs
-const co2Emissions = calc.get_results("buildings/results/ems_oil__k__to_coe_per_a/private");
+// 5. Query results: either the full hierarchical object or specific IDs
+const results = calc.get_results_object();
+console.log(results.buildings.floor_A__k__m2.private);           // Float64Array [197.68, ...]
+console.log(results.stakeholders.private_cash_flow_netto);       // Float64Array [...]
+
+// String-based queries continue to be fully supported:
 const netCashFlow = calc.get_results("stakeholders/results/private_cash_flow_netto");
 ```
 

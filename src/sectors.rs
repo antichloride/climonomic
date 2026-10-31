@@ -1,8 +1,9 @@
 use crate::input::Input;
 use crate::result::Results;
 use std::ops;
+use serde::Serialize;
 
-
+#[derive(Serialize)]
 pub struct SectorsInputs {
     pub private: Input,
     pub industry: Input,
@@ -295,6 +296,7 @@ macro_rules! impl_math_ops_for_sector {
 
 impl_math_ops_for_sector!{f64}
 
+#[derive(Serialize)]
 pub struct SectorsResult{
     pub private: Results,
     pub industry: Results,

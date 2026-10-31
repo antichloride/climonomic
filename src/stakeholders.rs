@@ -12,7 +12,9 @@ use crate::constants;
 macro_rules! implement_stakeholders{
     ($($field:ident),*) => {
 
+        #[derive(serde::Serialize)]
         pub struct Stakeholders{
+            #[serde(skip)]
             start_year: u32,
             $(
                 pub $field: Results,

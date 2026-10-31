@@ -11,7 +11,7 @@ use crate::constants::buildings::EnergySource::oil;
 
 
 pub struct Mobility {
-    inputs: InputsMobility,
+    pub inputs: InputsMobility,
     pub results: ResultsMobility,
     start_year: u32,
 }
@@ -195,17 +195,18 @@ impl Mobility{
 macro_rules! implement_inputs_mobility{
     ($($field:ident),*) => {
 
-        struct InputsMobility{
+        #[derive(serde::Serialize)]
+        pub struct InputsMobility{
             $(
-                $field: SectorsInputs,
+                pub $field: SectorsInputs,
              )*
-            traveld_dist_per_person__m__m_per_a: Input,
-            mean_persons_per_car: Input,
-            modal_split_car: Input,
-            n_sl__k__: Input,
-            nrg_cnsmp_per_sl__k__W_h_per_a: Input,
-            om_costs_per_sl__eur_per_a: Input,
-            price_fuel__eur_per_L: Input,
+            pub traveld_dist_per_person__m__m_per_a: Input,
+            pub mean_persons_per_car: Input,
+            pub modal_split_car: Input,
+            pub n_sl__k__: Input,
+            pub nrg_cnsmp_per_sl__k__W_h_per_a: Input,
+            pub om_costs_per_sl__eur_per_a: Input,
+            pub price_fuel__eur_per_L: Input,
         }
 
         impl InputsMobility{
@@ -315,14 +316,15 @@ implement_inputs_mobility!{
 macro_rules! implement_results_mobility{
     ($($field:ident),*) => {
 
+        #[derive(serde::Serialize)]
         pub struct ResultsMobility{
             $(
                 pub $field: SectorsResult,
              )*
-            sl_nrg_dmd__G__W_h_per_a: Results,
-            sl_nrg_costs__M__eur_per_a: Results,
-            sl_om_costs__M__eur_per_a: Results,
-            sl_total_costs__M__eur_per_a: Results,
+            pub sl_nrg_dmd__G__W_h_per_a: Results,
+            pub sl_nrg_costs__M__eur_per_a: Results,
+            pub sl_om_costs__M__eur_per_a: Results,
+            pub sl_total_costs__M__eur_per_a: Results,
         }
 
         impl ResultsMobility{
