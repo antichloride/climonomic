@@ -275,12 +275,12 @@ macro_rules! implement_inputs_mobility{
             }
 
             fn get_input_by_id(&mut self, id: &str) -> Option<&mut Input>{
-                let binding = id.to_string();
-                let splitted_id: Vec<&str> = binding.split("/").collect();
-                let binding_b = &splitted_id[1..].join("/");
-                let remaining_id = binding_b.as_str();
+                let (prefix, remaining_id) = match id.split_once('/') {
+                    Some((p, r)) => (p, r),
+                    None => (id, ""),
+                };
 
-                match splitted_id[0]{
+                match prefix{
                     $(
                         stringify!($field) =>
                             self.$field.get_input_by_id(remaining_id),
@@ -375,12 +375,12 @@ macro_rules! implement_results_mobility{
             }
 
             fn get_results_by_id(&mut self, id: &str) -> Option<&mut Results>{
-                let binding = id.to_string();
-                let splitted_id: Vec<&str> = binding.split("/").collect();
-                let binding_b = &splitted_id[1..].join("/");
-                let remaining_id = binding_b.as_str();
+                let (prefix, remaining_id) = match id.split_once('/') {
+                    Some((p, r)) => (p, r),
+                    None => (id, ""),
+                };
 
-                match splitted_id[0]{
+                match prefix{
                     $(
                         stringify!($field)=> self.$field
                             .get_results_by_id(remaining_id),

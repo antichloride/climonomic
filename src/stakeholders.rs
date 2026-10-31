@@ -12,16 +12,16 @@ use crate::constants;
 macro_rules! implement_stakeholders{
     ($($field:ident),*) => {
 
-        pub struct Steakholders{
+        pub struct Stakeholders{
             start_year: u32,
             $(
                 pub $field: Results,
              )*
         }
 
-        impl Steakholders{
-            pub fn new(start_year: u32, end_year: u32) -> Steakholders {
-                return Steakholders{
+        impl Stakeholders{
+            pub fn new(start_year: u32, end_year: u32) -> Stakeholders {
+                return Stakeholders{
                     start_year: start_year,
                     $(
                         $field: Results::new(
@@ -70,7 +70,7 @@ implement_stakeholders!{
     federal_cash_flow_netto
 }
 
-impl Steakholders{
+impl Stakeholders{
     pub fn calculate(
         &mut self,
         year: u32,

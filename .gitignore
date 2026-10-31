@@ -1,9 +1,21 @@
-*/node_modules/*
-target/*
-.git/*
-old/*
-Cargo.lock
+target/
+old/
 /tmp/**
 /test_javascript/**
 
-*.pyc
+# WebAssembly build artifacts
+pkg/
+node_modules/
+*/node_modules/*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# OS and editors
+.DS_Store
+*.swp
+*.bak
+

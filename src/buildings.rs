@@ -547,12 +547,12 @@ macro_rules! implement_inputs_buildings{
             }
 
             fn get_input_by_id(&mut self, id: &str) -> Option<&mut Input>{
-                let binding = id.to_string();
-                let splitted_id: Vec<&str> = binding.split("/").collect();
-                let binding_b = &splitted_id[1..].join("/");
-                let remaining_id = binding_b.as_str();
+                let (prefix, remaining_id) = match id.split_once('/') {
+                    Some((p, r)) => (p, r),
+                    None => (id, ""),
+                };
 
-                match splitted_id[0]{
+                match prefix{
                     $(
                         stringify!($field)
                             => self.$field.get_input_by_id(remaining_id),
@@ -588,7 +588,7 @@ implement_inputs_buildings!{
     A_heat_heat_pump__k__m2
 }
 
-macro_rules! implement_results_builidngs{
+macro_rules! implement_results_buildings{
     ($($field:ident),*) => {
 
         pub struct ResultsBuildings{
@@ -623,12 +623,12 @@ macro_rules! implement_results_builidngs{
             }
 
             fn get_results_by_id(&mut self, id: &str) -> Option<&mut Results>{
-                let binding = id.to_string();
-                let splitted_id: Vec<&str> = binding.split("/").collect();
-                let binding_b = &splitted_id[1..].join("/");
-                let remaining_id = binding_b.as_str();
+                let (prefix, remaining_id) = match id.split_once('/') {
+                    Some((p, r)) => (p, r),
+                    None => (id, ""),
+                };
 
-                match splitted_id[0]{
+                match prefix{
                     $(
                         stringify!($field)
                             => self.$field.get_results_by_id(remaining_id),
@@ -644,7 +644,7 @@ macro_rules! implement_results_builidngs{
     }
 }
 
-implement_results_builidngs!{
+implement_results_buildings!{
     floor_A__k__m2,
     total_heat_dmd__G__W_h_per_a,
     elec_dmd__G__W_h_per_a,

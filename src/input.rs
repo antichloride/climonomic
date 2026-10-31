@@ -1,9 +1,7 @@
-use std::ptr;
-
 pub struct Input{
     pub id: String,
     values: Vec<f64>,
-    measures: Vec<Measure>,
+    pub measures: Vec<Measure>,
     start_year: u32,
     end_year: u32,
 }
@@ -21,6 +19,9 @@ impl Input{
     }
 
     pub fn get_year(&self, year: u32) -> f64{
+        if year < self.start_year || year > self.end_year {
+            return 0.0;
+        }
         return self.values[(year-self.start_year) as usize];
     }
 
@@ -59,12 +60,8 @@ impl Input{
     }
 
     fn get_measure_by_id(&mut self, measure_id: &str) -> Option<&mut Measure>{
-        for measure in &mut self.measures{
-            if measure.id==measure_id.to_owned(){
-                return Some(measure);
-            }
-        }
-        return None;
+        let full_id = format!("{}/{}", self.id, measure_id);
+        self.measures.iter_mut().find(|m| m.id == measure_id || m.id == full_id)
     }
 
     pub fn update_measure(&mut self, measure_id: &str, start_year: u32, end_year: u32, delta: f64){
@@ -78,8 +75,9 @@ impl Input{
         self.apply_measures();
     }
 
-    fn get_measure_index_by_id(&mut self, measure_id: &str) -> Option<usize>{
-        return self.measures.iter().position(|m| ptr::eq(&m.id, &measure_id.to_owned()));
+    fn get_measure_index_by_id(&self, measure_id: &str) -> Option<usize>{
+        let full_id = format!("{}/{}", self.id, measure_id);
+        self.measures.iter().position(|m| m.id == measure_id || m.id == full_id)
     }
 
     pub fn delete_measure(&mut self, measure_id: &str){
@@ -100,17 +98,17 @@ impl Input{
 }
 
 pub struct Measure {
-    id: String,
-    start_year: u32,
-    end_year: u32,
-    delta: f64,
+    pub id: String,
+    pub start_year: u32,
+    pub end_year: u32,
+    pub delta: f64,
 }
 
 impl Measure{
 
     pub fn delta_per_year(&self, year: u32) -> f64{
-        // start_yaer is the first yaer in which the measure is applied
-        // end year is the last year in which the measures is applied
+        // start_year is the first year in which the measure is applied
+        // end_year is the last year in which the measure is applied
         // the target delta is reached at the end of the end_year
         if year < self.start_year || year > self.end_year{
             return 0.0;
@@ -150,5 +148,26 @@ mod tests{
         assert!(input.get_year(2023)==10.0);
         assert!(input.get_year(2024)==5.0);
         assert!(input.get_year(2025)==0.0);
+    }
+
+    #[test]
+    fn test_delete_measure() {
+        let mut input = Input::new("buildings/inputs/heat_dmd".to_string(), 2023, 2025);
+        input.set_values(10.0);
+        input.add_measure("measure", 2024, 2025, 10.0);
+        assert_eq!(input.measures.len(), 1);
+        assert_eq!(input.get_year(2025), 0.0);
+
+        // Test deleting by short ID
+        input.delete_measure("measure");
+        assert_eq!(input.measures.len(), 0);
+        assert_eq!(input.get_year(2025), 10.0);
+
+        // Test deleting by full ID
+        input.add_measure("measure2", 2024, 2025, 10.0);
+        assert_eq!(input.measures.len(), 1);
+        input.delete_measure("buildings/inputs/heat_dmd/measure2");
+        assert_eq!(input.measures.len(), 0);
+        assert_eq!(input.get_year(2025), 10.0);
     }
 }

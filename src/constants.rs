@@ -43,7 +43,7 @@ pub mod buildings{
 
         pub mod oil{
             pub const energy_density__k__W_h_per_L: f64 = (40000000.0*0.833/3600.0/1000.0+43500000.0*0.748/3600.0/1000.0)/2.0;
-            pub const pric0e__eur_per_L: f64 = 0.82;
+            pub const price__eur_per_L: f64 = 0.82;
             pub const emission__kg_coe_per_L: f64 = 2.8;
         }
 

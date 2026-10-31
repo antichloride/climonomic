@@ -16,7 +16,7 @@ mod constants;
 mod economy;
 use economy::Economy;
 mod stakeholders;
-use stakeholders::Steakholders;
+use stakeholders::Stakeholders;
 
 #[cfg(test)]
 #[macro_use]
@@ -24,23 +24,21 @@ extern crate approx;
 
 #[wasm_bindgen]
 pub struct Calculator {
-    buildings: Buildings,
-    mobility: Mobility,
-    energy: Energy,
-    economy: Economy,
-    stakeholders: Steakholders,
+    pub(crate) buildings: Buildings,
+    pub(crate) mobility: Mobility,
+    pub(crate) energy: Energy,
+    pub(crate) economy: Economy,
+    pub(crate) stakeholders: Stakeholders,
     pub start_year: u32,
     pub end_year: u32,
 }
 
 
-/// This struct serves as interface. The wasm bridge is not optimized for
-/// objects yet, therefore ids must be used instead.
+/// This struct serves as interface for the WebAssembly bridge.
 ///
 /// The procedure works as follows:
 /// 1. Initialize the calculator using the "new" function.
-/// 2. Fill the input parameters using "set_input". This must be done for each
-/// parameter individually.
+/// 2. Fill the input parameters using "set_input".
 /// 3. Add measures using "new_measure".
 /// 4. Trigger the calculation using "calculate_over_years".
 /// 5. Get result values (list with one value per year) using "get_results".
@@ -51,21 +49,20 @@ impl Calculator{
     /// start and end year are included. All input parameters will be
     /// initialized as zero.
     pub fn new(start_year: u32, end_year: u32) -> Calculator {
-        let calculator = Calculator {
+        Calculator {
             buildings: Buildings::new(start_year, end_year),
             mobility: Mobility::new(start_year, end_year),
             energy: Energy::new(start_year, end_year),
             economy: Economy::new(start_year, end_year),
-            stakeholders: Steakholders::new(start_year, end_year),
-            start_year: start_year,
-            end_year: end_year,
-        };
-        return calculator;
+            stakeholders: Stakeholders::new(start_year, end_year),
+            start_year,
+            end_year,
+        }
     }
 
     /// This function serves to trigger the calculation process.
     pub fn calculate_over_years(&mut self){
-        for year in self.start_year..self.end_year + 1{
+        for year in self.start_year..=self.end_year {
             self.calculate_first_stage(year);
             self.calculate_second_stage(year);
             self.calculate_emissions(year);
@@ -124,59 +121,47 @@ impl Calculator{
     }
 
     /// Returns the ids of all input parameters.
-    pub fn list_input_ids(&self) -> JsValue{
-        let vec: Vec<_> = self.get_inputs().iter().map(|&a| &a.id).collect();
-        return to_value(&vec).unwrap();
+    pub fn list_input_ids(&self) -> Vec<String> {
+        self.get_inputs().iter().map(|&a| a.id.clone()).collect()
     }
 
-    fn get_input_by_id(&mut self, id: &str) -> Option<&mut Input>{
-        let binding = id.to_string();
-        let splitted_id: Vec<&str> = binding.split("/").collect();
-        let binding_b = &splitted_id[2..].join("/");
-        let remaining_id = binding_b.as_str();
+    fn get_input_by_id(&mut self, id: &str) -> Option<&mut Input> {
+        let (domain, rest) = id.split_once('/')?;
+        let (_, remaining_id) = rest.split_once('/')?;
 
-        match splitted_id[0]{
-            "buildings" => self.buildings.get_input_by_id(&remaining_id),
-            "mobility" => self.mobility.get_input_by_id(&remaining_id),
-            "energy" => self.energy.get_input_by_id(&remaining_id),
+        match domain {
+            "buildings" => self.buildings.get_input_by_id(remaining_id),
+            "mobility" => self.mobility.get_input_by_id(remaining_id),
+            "energy" => self.energy.get_input_by_id(remaining_id),
             _ => None,
         }
     }
 
-    pub fn get_input_values(&mut self, id: &str) -> Vec<f64>{
-        let input = self.get_input_by_id(id);
-        match input{
-            Some(input) => {
-                return input.get_values().clone();
-            },
-            None => Vec::from([0.0,0.0,3.1415, 42.0]),
-        }
+    pub fn get_input_values(&mut self, id: &str) -> Result<Vec<f64>, JsError> {
+        self.get_input_by_id(id)
+            .map(|input| input.get_values().clone())
+            .ok_or_else(|| JsError::new(&format!("Input ID not found: '{id}'")))
     }
 
     /// This function serves to populate the input parameters.
     ///
-    /// Note that "set input" means the start year value of an input parameter.
-    pub fn set_input(&mut self, id: &str, value: f64){
-        let res = self.get_input_by_id(id);
-        match res{
+    /// Note that "set input" sets the start year baseline of an input parameter.
+    pub fn set_input(&mut self, id: &str, value: f64) -> Result<(), JsError> {
+        match self.get_input_by_id(id) {
             Some(input) => {
                 input.set_values(value);
-            },
-            None => (),
+                Ok(())
+            }
+            None => Err(JsError::new(&format!("Input ID not found: '{id}'"))),
         }
-
     }
 
     /// This function returns the start year value of an input parameter.
-    pub fn get_input(&mut self, id: &str) -> Option<f64>{
-        let res = self.get_input_by_id(id);
-        match res{
-            Some(input) => {
-                return Some(input.get_value());
-            },
-            None => None,
+    pub fn get_input(&mut self, id: &str) -> Result<f64, JsError> {
+        match self.get_input_by_id(id) {
+            Some(input) => Ok(input.get_value()),
+            None => Err(JsError::new(&format!("Input ID not found: '{id}'"))),
         }
-
     }
 
     fn get_results_list(&self) -> Vec<&Results> {
@@ -190,54 +175,38 @@ impl Calculator{
     }
 
     /// Returns the ids of all results.
-    pub fn list_result_ids(&self) -> JsValue{
-        let vec: Vec<_> = self.get_results_list().iter().map(|&a| &a.id).collect();
-        return to_value(&vec).unwrap();
+    pub fn list_result_ids(&self) -> Vec<String> {
+        self.get_results_list().iter().map(|&a| a.id.clone()).collect()
     }
 
-    fn get_results_by_id(&mut self, id: &str) -> Option<&mut Results>{
-        let binding = id.to_string();
-        let splitted_id: Vec<&str> = binding.split("/").collect();
-        let binding_b = &splitted_id[2..].join("/");
-        let remaining_id = binding_b.as_str();
-        println!("FIrst:{0}, Second:{1}", splitted_id[0], remaining_id);
-        println!("{0}", id);
+    fn get_results_by_id(&mut self, id: &str) -> Option<&mut Results> {
+        let (domain, rest) = id.split_once('/')?;
+        let (_, remaining_id) = rest.split_once('/')?;
 
-        match splitted_id[0]{
-            "buildings" => self.buildings.get_results_by_id(&remaining_id),
-            "mobility" => self.mobility.get_results_by_id(&remaining_id),
-            "energy" => self.energy.get_results_by_id(&remaining_id),
-            "economy" => self.economy.get_results_by_id(&remaining_id),
-            "stakeholders" => self.stakeholders.get_results_by_id(&remaining_id),
+        match domain {
+            "buildings" => self.buildings.get_results_by_id(remaining_id),
+            "mobility" => self.mobility.get_results_by_id(remaining_id),
+            "energy" => self.energy.get_results_by_id(remaining_id),
+            "economy" => self.economy.get_results_by_id(remaining_id),
+            "stakeholders" => self.stakeholders.get_results_by_id(remaining_id),
             _ => None,
         }
     }
 
     /// Get a list of values (for each year) in a result.
-    pub fn get_results(&mut self, id: &str) -> Vec<f64>{
-        let res = self.get_results_by_id(id);
-        match res{
-            Some(results) => {
-                return results.get_values().clone();
-            },
-            None => Vec::from([0.0,0.0,3.1415, 42.0]),
-        }
-
+    pub fn get_results(&mut self, id: &str) -> Result<Vec<f64>, JsError> {
+        self.get_results_by_id(id)
+            .map(|results| results.get_values().clone())
+            .ok_or_else(|| JsError::new(&format!("Result ID not found: '{id}'")))
     }
 
-    /// Add a new measure to a input (given by an input id).
+    /// Add a new measure to an input (given by an input id).
     /// start and end year defines the year range for which the measure applies.
     ///
     /// Note that start year is included.
     ///
     /// The delta defines by how much the input parameter is changed over the given range of years.
-    /// The change is applied linear.
-    ///
-    /// I.e. if the number of cars is about to be reduced by 200 from 2025 to
-    /// 2026 and there are 1200 cars in the calculator start year 2023 the
-    /// values for n_cars will be:
-    ///
-    /// 2023->1200, 2024->1200, 2025->1100, 2026->1000, 2027->1000...
+    /// The change is applied linearly.
     pub fn new_measure(
         &mut self,
         id: &str,
@@ -245,18 +214,18 @@ impl Calculator{
         start_year: u32,
         end_year: u32,
         delta: f64,
-        ){
-        let res = self.get_input_by_id(input_id);
-        match res{
+    ) -> Result<(), JsError> {
+        match self.get_input_by_id(input_id) {
             Some(input) => {
                 input.add_measure(id, start_year, end_year, delta);
-            },
-            None => (),
+                Ok(())
+            }
+            None => Err(JsError::new(&format!("Input ID not found: '{input_id}'"))),
         }
     }
 
     /// For changing the start_year, end_year or delta of a given measure.
-    /// Note that even if one of the does not change, all must be given.
+    /// Note that even if one of them does not change, all must be given.
     pub fn update_measure(
         &mut self,
         id: &str,
@@ -264,15 +233,14 @@ impl Calculator{
         start_year: u32,
         end_year: u32,
         delta: f64,
-        ){
-        let res = self.get_input_by_id(input_id);
-        match res{
+    ) -> Result<(), JsError> {
+        match self.get_input_by_id(input_id) {
             Some(input) => {
                 input.update_measure(id, start_year, end_year, delta);
-            },
-            None => (),
+                Ok(())
+            }
+            None => Err(JsError::new(&format!("Input ID not found: '{input_id}'"))),
         }
-
     }
 
     /// Deleting a measure. Note that this updates the values of the
@@ -281,20 +249,25 @@ impl Calculator{
         &mut self,
         id: &str,
         input_id: &str,
-        ){
-        let res = self.get_input_by_id(input_id);
-        match res{
+    ) -> Result<(), JsError> {
+        match self.get_input_by_id(input_id) {
             Some(input) => {
                 input.delete_measure(id);
-            },
-            None => (),
+                Ok(())
+            }
+            None => Err(JsError::new(&format!("Input ID not found: '{input_id}'"))),
         }
     }
 
     /// List all measure ids that are present in the current calculator.
-    pub fn list_measure_ids(&self) -> JsValue{
-        let vec: Vec<_> = self.get_inputs().iter().map(|&a| a.list_measure_ids()).collect();
-        return to_value(&vec).unwrap();
+    pub fn list_measure_ids(&self) -> Vec<String> {
+        let mut list = Vec::new();
+        for input in self.get_inputs() {
+            for id in input.list_measure_ids() {
+                list.push(id.clone());
+            }
+        }
+        list
     }
 }
 
@@ -322,10 +295,10 @@ mod integration_tests{
         calculator.energy = energy;
         calculator.mobility = mobility;
         calculator.calculate_over_years();
-        console::log_1(&calculator.list_result_ids());
-        console::log_1(&to_value(&calculator.get_results("economy/results/invest_heating_material")).unwrap());
+        console::log_1(&to_value(&calculator.list_result_ids()).unwrap());
+        console::log_1(&to_value(&calculator.get_results("economy/results/invest_heating_material").unwrap()).unwrap());
         console::log_1(&to_value(&calculator.economy.invest_heating_material.values).unwrap());
-        console::log_1(&to_value(&calculator.get_results("buildings/results/floor_A__k__m2/private")).unwrap());
+        console::log_1(&to_value(&calculator.get_results("buildings/results/floor_A__k__m2/private").unwrap()).unwrap());
         console::log_1(&to_value(&calculator.buildings.results.floor_A__k__m2.private.values).unwrap());
     }
 }
@@ -340,4 +313,14 @@ mod unit_tests{
         assert!(!calculator.get_results_by_id("buildings/results/floor_A__k__m2/private").is_none());
         assert!(!calculator.get_results_by_id("economy/results/invest_heating_material").is_none());
     }
+
+    #[test]
+    fn test_calculator_error_handling() {
+        let mut calculator: Calculator = Calculator::new(2022, 2025);
+        assert!(calculator.get_results("non_existent_id").is_err());
+        assert!(calculator.get_input("invalid/input/path").is_err());
+        assert!(calculator.set_input("invalid/input/path", 12.0).is_err());
+        assert!(calculator.new_measure("m1", "invalid/path", 2023, 2024, 1.0).is_err());
+    }
 }
+

@@ -6,19 +6,19 @@ This document describes the technical architecture, WebAssembly (Wasm) integrati
 
 ## 1. Rust Toolchain & Build System
 
-The core engine is written in Rust (2018 edition) and designed to compile both as a standard native library (`rlib`) for native testing and as a dynamic WebAssembly library (`cdylib`) for integration into web applications and Node.js environments.
+The core engine is written in Rust (2021 edition) and designed to compile both as a standard native library (`rlib`) for native testing and as a dynamic WebAssembly library (`cdylib`) for integration into web applications and Node.js environments.
 
 ### 1.1 `Cargo.toml` Configuration
 Key crate configuration from [`Cargo.toml`](../Cargo.toml):
 - **Crate Types**: `crate-type = ["cdylib", "rlib"]`
 - **Dependencies**:
-  - `wasm-bindgen` (`0.2.63`, with `serde-serialize`): Generates bindings between Rust and JavaScript.
+  - `wasm-bindgen` (`0.2`): Generates bindings between Rust and JavaScript.
   - `serde` (`1.0`, with `derive`): Data serialization/deserialization.
-  - `serde-wasm-bindgen` (`0.4`): High-performance serialization bridging Rust data structures and JS `JsValue`.
+  - `serde-wasm-bindgen` (`0.6`): High-performance serialization bridging Rust data structures and JS `JsValue`.
   - `console_error_panic_hook`: Optional debug feature routing Rust panics to the browser's `console.error`.
   - `web-sys`: Web API bindings (used for browser console logging).
 - **Release Profile**:
-  - `opt-level = "s"`: Optimizes the binary for minimal Wasm bundle size.
+  - `opt-level = "s"`, `lto = true`, `codegen-units = 1`: Optimizes the binary for minimal Wasm bundle size with Link-Time Optimization.
 
 ### 1.2 Compiling to WebAssembly
 To build the Wasm package for web/frontend usage:
@@ -43,11 +43,11 @@ The main interface exposed via `#[wasm_bindgen]` in [`src/lib.rs`](../src/lib.rs
 ```rust
 #[wasm_bindgen]
 pub struct Calculator {
-    buildings: Buildings,
-    mobility: Mobility,
-    energy: Energy,
-    economy: Economy,
-    stakeholders: Steakholders,
+    pub(crate) buildings: Buildings,
+    pub(crate) mobility: Mobility,
+    pub(crate) energy: Energy,
+    pub(crate) economy: Economy,
+    pub(crate) stakeholders: Stakeholders,
     pub start_year: u32,
     pub end_year: u32,
 }
@@ -73,12 +73,40 @@ calc.new_measure("pv_expansion", "energy/inputs/sol_rf_installed__M__Wp/private"
 // 4. Trigger the multi-stage annual calculation
 calc.calculate_over_years();
 
-// 5. Query time-series results (returns Array<number> with one value per year)
+// 5. Query time-series results (returns Float64Array with one value per year)
 const co2Emissions = calc.get_results("buildings/results/ems_oil__k__to_coe_per_a/private");
 const netCashFlow = calc.get_results("stakeholders/results/private_cash_flow_netto");
 ```
 
-### 2.3 ID Path Convention & Routing
+### 2.3 JavaScript / TypeScript API Reference & Error Handling
+All methods validate ID existence and throw standard JavaScript `Error` exceptions upon receiving unknown or invalid IDs.
+
+| Method | TypeScript Signature | Description |
+| :--- | :--- | :--- |
+| `Calculator.new` | `(startYear: number, endYear: number) => Calculator` | Constructs and initializes the simulation engine over the specified year range. |
+| `set_input` | `(id: string, value: number) => void` | Sets the start-year baseline value for the given input ID. Throws `Error` if ID not found. |
+| `get_input` | `(id: string) => number` | Retrieves the start-year baseline value. Throws `Error` if ID not found. |
+| `get_input_values` | `(id: string) => Float64Array` | Retrieves the entire time-series array of input values. Throws `Error` if ID not found. |
+| `new_measure` | `(id: string, inputId: string, startYear: number, endYear: number, delta: number) => void` | Adds an intervention measure applied linearly over `[startYear, endYear]`. Throws `Error` if input ID not found. |
+| `update_measure` | `(id: string, inputId: string, startYear: number, endYear: number, delta: number) => void` | Updates an existing measure. Throws `Error` if input ID not found. |
+| `delete_measure` | `(id: string, inputId: string) => void` | Deletes a measure and updates the input time-series. Throws `Error` if input ID not found. |
+| `calculate_over_years` | `() => void` | Runs the 5-stage simulation pipeline across all configured years. |
+| `get_results` | `(id: string) => Float64Array` | Retrieves annual computed results. Throws `Error` if result ID not found. |
+| `list_input_ids` | `() => string[]` | Returns all available input IDs across all domains. |
+| `list_result_ids` | `() => string[]` | Returns all available result IDs across all domains. |
+| `list_measure_ids` | `() => string[]` | Returns all active measure IDs across all inputs. |
+
+#### Error Handling Example
+```typescript
+try {
+  calc.set_input("invalid/input/path", 100);
+} catch (err) {
+  console.error("Simulation configuration error:", err.message);
+  // Output: "Simulation configuration error: Input ID not found: 'invalid/input/path'"
+}
+```
+
+### 2.4 ID Path Convention & Routing
 String IDs follow a hierarchical slash-delimited URI pattern:
 - **Sector-specific inputs**: `<domain>/inputs/<variable_name>/<sector>`
   *(e.g., `buildings/inputs/heat_dmd__k__W_h_per_m2_a/private`)*
