@@ -157,6 +157,16 @@ impl Calculator{
         }
     }
 
+    /// Sets an entire time-series trajectory (one value per year) for a given input ID.
+    pub fn set_input_values(&mut self, id: &str, values: Vec<f64>) -> Result<(), JsError> {
+        match self.get_input_by_id(id) {
+            Some(input) => input
+                .set_custom_values(&values)
+                .map_err(|e| JsError::new(&e)),
+            None => Err(JsError::new(&format!("Input ID not found: '{id}'"))),
+        }
+    }
+
     /// This function returns the start year value of an input parameter.
     pub fn get_input(&mut self, id: &str) -> Result<f64, JsError> {
         match self.get_input_by_id(id) {
@@ -380,11 +390,44 @@ fn apply_json_inputs(calc: &mut Calculator, val: &serde_json::Value) -> Result<(
                                 calc.set_input(&id, f)?;
                             }
                         }
+                        serde_json::Value::Array(arr) => {
+                            let mut vec = Vec::with_capacity(arr.len());
+                            for v in arr {
+                                if let Some(f) = v.as_f64() {
+                                    vec.push(f);
+                                } else {
+                                    return Err(JsError::new(&format!(
+                                        "Array element for '{domain_name}/inputs/{var_name}' must be a number"
+                                    )));
+                                }
+                            }
+                            let id = format!("{domain_name}/inputs/{var_name}");
+                            calc.set_input_values(&id, vec)?;
+                        }
                         serde_json::Value::Object(sectors) => {
                             for (sector_name, sector_val) in sectors {
-                                if let Some(f) = sector_val.as_f64() {
-                                    let id = format!("{domain_name}/inputs/{var_name}/{sector_name}");
-                                    calc.set_input(&id, f)?;
+                                match sector_val {
+                                    serde_json::Value::Number(num) => {
+                                        if let Some(f) = num.as_f64() {
+                                            let id = format!("{domain_name}/inputs/{var_name}/{sector_name}");
+                                            calc.set_input(&id, f)?;
+                                        }
+                                    }
+                                    serde_json::Value::Array(arr) => {
+                                        let mut vec = Vec::with_capacity(arr.len());
+                                        for v in arr {
+                                            if let Some(f) = v.as_f64() {
+                                                vec.push(f);
+                                            } else {
+                                                return Err(JsError::new(&format!(
+                                                    "Array element for '{domain_name}/inputs/{var_name}/{sector_name}' must be a number"
+                                                )));
+                                            }
+                                        }
+                                        let id = format!("{domain_name}/inputs/{var_name}/{sector_name}");
+                                        calc.set_input_values(&id, vec)?;
+                                    }
+                                    _ => {}
                                 }
                             }
                         }
@@ -492,6 +535,40 @@ mod unit_tests{
         assert!(json.contains("economy"));
         assert!(json.contains("invest_heating_material"));
         assert!(json.contains("stakeholders"));
+    }
+
+    #[test]
+    fn test_set_input_values() {
+        let mut calculator = Calculator::new(2022, 2025);
+        let oil_prices = vec![0.82, 0.88, 0.95, 1.10];
+        assert!(calculator.set_input_values("buildings/inputs/price_oil__eur_per_L", oil_prices.clone()).is_ok());
+        let retrieved = calculator.get_input_values("buildings/inputs/price_oil__eur_per_L").unwrap();
+        assert_eq!(retrieved, oil_prices);
+
+        // Mismatched length error
+        assert!(calculator.set_input_values("buildings/inputs/price_oil__eur_per_L", vec![0.82, 0.88]).is_err());
+    }
+
+    #[test]
+    fn test_set_inputs_json_trajectories() {
+        let mut calculator = Calculator::new(2022, 2025);
+        let config = r#"{
+            "buildings": {
+                "price_oil__eur_per_L": [0.80, 0.85, 0.95, 1.15],
+                "n_buildings": {
+                    "private": [5000.0, 5020.0, 5040.0, 5060.0]
+                }
+            }
+        }"#;
+        assert!(calculator.set_inputs_json(config).is_ok());
+        assert_eq!(
+            calculator.get_input_values("buildings/inputs/price_oil__eur_per_L").unwrap(),
+            vec![0.80, 0.85, 0.95, 1.15]
+        );
+        assert_eq!(
+            calculator.get_input_values("buildings/inputs/n_buildings/private").unwrap(),
+            vec![5000.0, 5020.0, 5040.0, 5060.0]
+        );
     }
 }
 

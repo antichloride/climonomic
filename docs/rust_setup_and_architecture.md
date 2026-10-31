@@ -85,10 +85,12 @@ All methods validate input structure and ID existence, throwing standard JavaScr
 | :--- | :--- | :--- |
 | `Calculator.new` | `(startYear: number, endYear: number) => Calculator` | Constructs and initializes the simulation engine over the specified year range. |
 | **`get_results_object`** | `() => SimulationResults` | **(Recommended)** Returns the entire simulation output tree as a natural, nested JavaScript object with full sector breakdowns. |
-| **`set_inputs`** | `(inputs: object) => void` | **(Recommended)** Sets baseline input variables in bulk using a nested JavaScript object (e.g. `{ buildings: { n_buildings: { private: 44000 } } }`). |
+| **`set_inputs`** | `(inputs: object) => void` | **(Recommended)** Sets input variables in bulk using a nested JavaScript object. Supports both scalar baseline numbers and full annual trajectory arrays (e.g. `{ buildings: { price_oil__eur_per_L: [0.82, 0.85, 0.95, ...] } }`). |
+| **`set_inputs_json`** | `(jsonStr: string) => void` | Sets input variables in bulk from a JSON string (supporting both scalar numbers and trajectory arrays). |
 | **`get_inputs_object`** | `() => SimulationInputs` | Returns the entire input parameter tree as a nested JavaScript object. |
 | **`add_measures`** | `(measures: MeasureInput[]) => void` | Adds multiple climate policy interventions in bulk using an array of measure objects. |
-| `set_input` | `(id: string, value: number) => void` | Sets the start-year baseline value for a specific string ID. |
+| `set_input` | `(id: string, value: number) => void` | Sets the start-year baseline value (broadcast across all years) for a specific string ID. |
+| **`set_input_values`** | `(id: string, values: Float64Array \| number[]) => void` | Sets an entire multi-year time-series trajectory (one value per year) for a specific input ID. Ideal for external world scenarios (e.g. oil price curves). |
 | `get_input` | `(id: string) => number` | Retrieves the start-year baseline value for a specific string ID. |
 | `get_input_values` | `(id: string) => Float64Array` | Retrieves the time-series array of input values for a specific string ID. |
 | `new_measure` | `(id: string, inputId: string, startYear: number, endYear: number, delta: number) => void` | Adds a single intervention measure applied linearly over `[startYear, endYear]`. |

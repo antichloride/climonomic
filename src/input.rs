@@ -2,6 +2,7 @@ use serde::{Serialize, Serializer};
 
 pub struct Input{
     pub id: String,
+    base_values: Vec<f64>,
     values: Vec<f64>,
     pub measures: Vec<Measure>,
     start_year: u32,
@@ -20,9 +21,11 @@ impl Serialize for Input {
 impl Input{
 
     pub fn new(id: String, start_year: u32, end_year: u32) -> Input{
+        let len = (end_year - start_year + 1) as usize;
         return Input{
             id: id,
-            values: vec![0.0; (end_year-start_year+1) as usize],
+            base_values: vec![0.0; len],
+            values: vec![0.0; len],
             measures: Vec::from([]),
             start_year: start_year,
             end_year: end_year,
@@ -37,19 +40,33 @@ impl Input{
     }
 
     pub fn apply_measures(&mut self) {
-        for year_index in 1..(self.end_year-self.start_year+1) {
-            self.values[year_index as usize] =
-                self.values[(year_index - 1) as usize];
+        self.values = self.base_values.clone();
+        let mut cumulative_delta = 0.0;
+        for year_index in 1..(self.end_year - self.start_year + 1) {
+            let current_year = year_index + self.start_year;
             for measure in &self.measures {
-                self.values[year_index as usize] +=
-                   measure.delta_per_year(year_index + self.start_year);
+                cumulative_delta += measure.delta_per_year(current_year);
             }
+            self.values[year_index as usize] += cumulative_delta;
         }
     }
 
     pub fn set_values(&mut self, value: f64){
-        self.values = vec![value; (self.end_year-self.start_year+1) as usize];
+        self.base_values = vec![value; (self.end_year-self.start_year+1) as usize];
         self.apply_measures();
+    }
+
+    pub fn set_custom_values(&mut self, values: &[f64]) -> Result<(), String> {
+        let expected_len = (self.end_year - self.start_year + 1) as usize;
+        if values.len() != expected_len {
+            return Err(format!(
+                "Expected {} values for years {}..={}, got {}",
+                expected_len, self.start_year, self.end_year, values.len()
+            ));
+        }
+        self.base_values = values.to_vec();
+        self.apply_measures();
+        Ok(())
     }
 
     pub fn get_value(& self) -> f64{
@@ -180,5 +197,27 @@ mod tests{
         input.delete_measure("buildings/inputs/heat_dmd/measure2");
         assert_eq!(input.measures.len(), 0);
         assert_eq!(input.get_year(2025), 10.0);
+    }
+
+    #[test]
+    fn test_set_custom_values() {
+        let mut input = Input::new("test".to_string(), 2022, 2025);
+        let trajectory = vec![0.80, 0.85, 0.95, 1.10];
+        assert!(input.set_custom_values(&trajectory).is_ok());
+        assert_eq!(input.get_year(2022), 0.80);
+        assert_eq!(input.get_year(2023), 0.85);
+        assert_eq!(input.get_year(2024), 0.95);
+        assert_eq!(input.get_year(2025), 1.10);
+
+        // Invalid length
+        assert!(input.set_custom_values(&[0.80, 0.85]).is_err());
+
+        // With measure on top of custom trajectory
+        // measure from 2024 to 2025 with delta 1.0 -> -0.5 per year
+        input.add_measure("policy", 2024, 2025, 1.0);
+        assert_eq!(input.get_year(2022), 0.80);
+        assert_eq!(input.get_year(2023), 0.85);
+        assert_eq!(input.get_year(2024), 0.95 - 0.5);
+        assert_eq!(input.get_year(2025), 1.10 - 1.0);
     }
 }

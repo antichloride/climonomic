@@ -108,10 +108,55 @@ A **Scenario** represents how the external world evolves independent of direct l
   - Grid emission factors (`constants::evu_emissions`)
   - Vehicle lifecycle and consumption efficiencies
 
-### 2.3 Combining Scenarios and Measures
-In `climcalc-core`, a scenario is established by configuring the baseline parameters (`set_input`), defining the external economic backdrop (e.g., a "High Fossil Fuel Price" scenario vs. a "Low Price" scenario). 
+### 2.3 How Scenarios are Handed Over to the Calculator
 
-Policy measures are then layered on top using `new_measure()`. This allows municipal planners to ask:
+Global scenarios can be supplied to the calculator in two distinct ways:
+
+1. **Constant Baseline (Scalar Value)**:
+   - Setting a single scalar value via `set_input("price_oil__eur_per_L", 0.85)` or `{ "price_oil__eur_per_L": 0.85 }` in `set_inputs`.
+   - The value remains flat across all calculation years unless altered by a policy measure.
+
+2. **Custom Multi-Year Trajectory (Array of Annual Values)**:
+   - Providing an annual curve vector matching the simulation year range (from `start_year` to `end_year`, length `end_year - start_year + 1`).
+   - Via JavaScript/Wasm direct method:
+     ```javascript
+     // E.g., simulation from 2020 to 2045 (26 years)
+     const oilPriceCurve = [
+       0.70, 0.72, 0.80, 0.88, 0.95, 1.05, 1.12, 1.20,
+       1.25, 1.30, 1.35, 1.40, 1.45, 1.50, 1.55, 1.60,
+       1.65, 1.70, 1.75, 1.80, 1.85, 1.90, 1.95, 2.00, 2.05, 2.10
+     ];
+     calc.set_input_values("price_oil__eur_per_L", oilPriceCurve);
+     ```
+   - Via Hierarchical JSON in `set_inputs()`:
+     ```json
+     {
+       "buildings": {
+         "price_oil__eur_per_L": [0.70, 0.72, 0.80, 0.88, 0.95, "..."],
+         "price_gas__eur_per_m3": [0.08, 0.085, 0.09, 0.10, "..."]
+       },
+       "mobility": {
+         "price_fuel__eur_per_L": [1.45, 1.50, 1.58, 1.65, "..."]
+       }
+     }
+     ```
+   - Sector-divided variables can also receive custom trajectories per sector:
+     ```json
+     {
+       "n_buildings": {
+         "private": [5000, 5010, 5020, 5030, "..."],
+         "industry": [120, 122, 125, 126, "..."]
+       }
+     }
+     ```
+
+### 2.4 Combining Scenarios and Measures
+In `climcalc-core`, a scenario establishes the external economic and demographic backdrop (e.g., a "High Fossil Fuel Price" scenario vs. a "Low Price" scenario). 
+
+Policy measures are then layered on top using `new_measure()`. When a measure applies to an input with a custom trajectory, the measure's annual incremental delta compounds on top of the scenario's trajectory curve for each year:
+$$\text{final\_value}(t) = \text{base\_trajectory}(t) + \sum \Delta_{\text{measures}}(t)$$
+
+This allows municipal planners to ask:
 - *"How does an accelerated heat pump adoption program perform under high gas prices versus low gas prices?"*
 - *"At what grid electricity price does local rooftop solar reach municipal cash flow break-even?"*
 
