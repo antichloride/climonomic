@@ -6,6 +6,7 @@ mod calculate;
 pub use types::*;
 
 use crate::input::Input;
+use crate::input::InputFields;
 use crate::result::Results;
 use crate::sectors::SectorsResult;
 

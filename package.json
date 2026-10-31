@@ -1,0 +1,15 @@
+{
+  "name": "climcalc-core",
+  "version": "0.1.0",
+  "description": "Climate and economic transition simulation engine for cities and municipalities",
+  "type": "module",
+  "scripts": {
+    "extract": "python3 scripts/extract_excel_testcase.py \"examples/data/Rechnung Parameter v5.xlsx\" tests/fixtures/v5_rechnung.json",
+    "build:wasm": "wasm-pack build --target nodejs --out-dir pkg",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  }
+}

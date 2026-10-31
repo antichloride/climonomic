@@ -49,6 +49,7 @@ impl Calculator{
     /// A calculator is initialized by defining the year range. Note that
     /// start and end year are included. All input parameters will be
     /// initialized as zero.
+    #[wasm_bindgen(constructor)]
     pub fn new(start_year: u32, end_year: u32) -> Calculator {
         Calculator {
             buildings: Buildings::new(start_year, end_year),
