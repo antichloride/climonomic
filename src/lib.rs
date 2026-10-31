@@ -388,7 +388,9 @@ fn apply_json_inputs(calc: &mut Calculator, val: &serde_json::Value) -> Result<(
                         serde_json::Value::Number(num) => {
                             if let Some(f) = num.as_f64() {
                                 let id = format!("{domain_name}/inputs/{var_name}");
-                                calc.set_input(&id, f)?;
+                                if calc.get_input_by_id(&id).is_some() {
+                                    let _ = calc.set_input(&id, f);
+                                }
                             }
                         }
                         serde_json::Value::Array(arr) => {
@@ -396,14 +398,12 @@ fn apply_json_inputs(calc: &mut Calculator, val: &serde_json::Value) -> Result<(
                             for v in arr {
                                 if let Some(f) = v.as_f64() {
                                     vec.push(f);
-                                } else {
-                                    return Err(JsError::new(&format!(
-                                        "Array element for '{domain_name}/inputs/{var_name}' must be a number"
-                                    )));
                                 }
                             }
                             let id = format!("{domain_name}/inputs/{var_name}");
-                            calc.set_input_values(&id, vec)?;
+                            if calc.get_input_by_id(&id).is_some() {
+                                let _ = calc.set_input_values(&id, vec);
+                            }
                         }
                         serde_json::Value::Object(sectors) => {
                             for (sector_name, sector_val) in sectors {
@@ -411,7 +411,9 @@ fn apply_json_inputs(calc: &mut Calculator, val: &serde_json::Value) -> Result<(
                                     serde_json::Value::Number(num) => {
                                         if let Some(f) = num.as_f64() {
                                             let id = format!("{domain_name}/inputs/{var_name}/{sector_name}");
-                                            calc.set_input(&id, f)?;
+                                            if calc.get_input_by_id(&id).is_some() {
+                                                let _ = calc.set_input(&id, f);
+                                            }
                                         }
                                     }
                                     serde_json::Value::Array(arr) => {
@@ -419,14 +421,12 @@ fn apply_json_inputs(calc: &mut Calculator, val: &serde_json::Value) -> Result<(
                                         for v in arr {
                                             if let Some(f) = v.as_f64() {
                                                 vec.push(f);
-                                            } else {
-                                                return Err(JsError::new(&format!(
-                                                    "Array element for '{domain_name}/inputs/{var_name}/{sector_name}' must be a number"
-                                                )));
                                             }
                                         }
                                         let id = format!("{domain_name}/inputs/{var_name}/{sector_name}");
-                                        calc.set_input_values(&id, vec)?;
+                                        if calc.get_input_by_id(&id).is_some() {
+                                            let _ = calc.set_input_values(&id, vec);
+                                        }
                                     }
                                     _ => {}
                                 }
