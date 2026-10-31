@@ -240,15 +240,29 @@ This enables branchless, declarative investment calculations:
 let invest = 1e-3 * (&capacity_now - &capacity_prev) * unit_cost * capacity_now.is_greater(&capacity_prev);
 ```
 
-### 3.4 Metaprogramming via Declarative Macros
-To eliminate boilerplate across dozens of fields, the codebase uses declarative `macro_rules!` extensively:
-- `implement_inputs_buildings!`, `implement_results_builidngs!` ([`src/buildings.rs`](../src/buildings.rs))
-- `implement_inputs_energy!`, `implement_results_energy!` ([`src/energy.rs`](../src/energy.rs))
-- `implement_inputs_mobility!`, `implement_results_mobility!` ([`src/mobility.rs`](../src/mobility.rs))
-- `implement_economy!` ([`src/economy.rs`](../src/economy.rs))
-- `implement_stakeholders!` ([`src/stakeholders.rs`](../src/stakeholders.rs))
+### 3.4 Modular Domain Architecture
+To cleanly separate data models, calculations, and public facades, each of the five core simulation domains (`buildings`, `energy`, `mobility`, `economy`, `stakeholders`) is structured as a dedicated module:
 
-These macros automatically generate the containing struct, initialize all fields with proper ID paths, implement `get_inputs()` / `get_results()`, and generate string-matching dispatch tables for `get_input_by_id()` and `get_results_by_id()`.
+```
+src/<domain>/
+├── types.rs       # Data models: Inputs & Results structs, macros, and Serde annotations
+├── calculate.rs   # Computational core: stage 1, stage 2, emissions, and financial formulas
+├── mod.rs         # Domain facade: public getters, ID routing, and cross-sector delegates
+└── tests/         # Ingestion test fixtures & Excel parity verification suites
+    ├── <domain>_test_case.rs
+    └── compare_with_excel.rs
+```
+
+### 3.5 Metaprogramming via Declarative Macros
+To eliminate repetitive boilerplate across dozens of sector fields, each domain's `types.rs` leverages declarative `macro_rules!`:
+- `implement_inputs_buildings!`, `implement_results_buildings!` ([`src/buildings/types.rs`](../src/buildings/types.rs))
+- `implement_inputs_energy!`, `implement_results_energy!` ([`src/energy/types.rs`](../src/energy/types.rs))
+- `implement_inputs_mobility!`, `implement_results_mobility!` ([`src/mobility/types.rs`](../src/mobility/types.rs))
+- `implement_economy!` ([`src/economy/types.rs`](../src/economy/types.rs))
+- `implement_stakeholders!` ([`src/stakeholders/types.rs`](../src/stakeholders/types.rs))
+
+These macros automatically generate containing structs, initialize all fields with standardized hierarchical ID paths, implement `get_inputs()` / `get_results()`, and produce zero-allocation `split_once('/')` string-matching dispatch tables for `get_input_by_id()` and `get_results_by_id()`.
+
 
 ---
 
