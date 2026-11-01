@@ -24,6 +24,7 @@ features = ["console"]
 [dev-dependencies]
 wasm-bindgen-test = "0.3"
 approx = "0.5.1"
+syn = { version = "2.0", features = ["full", "parsing", "visit"] }
 
 [profile.release]
 opt-level = "s"

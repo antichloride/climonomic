@@ -9,6 +9,7 @@
     "build:wasm:web": "PATH=\"$HOME/.cargo/bin:$PATH\" wasm-pack build --target web --out-dir pkg-web",
     "dev": "npm --prefix frontend run dev",
     "test": "vitest run",
+    "test:rust": "PATH=\"$HOME/.cargo/bin:$PATH\" cargo test",
     "verify:units": "python3 scripts/verify_units.py",
     "docs:equations": "python3 scripts/export_equations_md.py"
   },

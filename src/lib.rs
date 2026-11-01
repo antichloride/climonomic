@@ -546,15 +546,14 @@ mod unit_tests{
 
     #[test]
     fn test_equation_metadata_registry() {
-        let calculator = Calculator::new(2022, 2025);
-        assert!(calculator.get_equation_metadata("total_heat_dmd__G__W_h_per_a").is_ok());
-        assert!(calculator.get_equation_metadata("buildings/results/floor_A__k__m2").is_ok());
-        assert!(calculator.get_equation_metadata("non_existent_equation").is_err());
-        assert!(calculator.list_equations().is_ok());
+        assert!(equations::get_equation_metadata("total_heat_dmd__G__W_h_per_a").is_some());
+        assert!(equations::get_equation_metadata("buildings/results/floor_A__k__m2").is_some());
+        assert!(equations::get_equation_metadata("non_existent_equation").is_none());
         assert!(equations::list_equations().len() >= 4);
     }
 
     #[test]
+    #[cfg_attr(not(target_arch = "wasm32"), ignore = "requires wasm32 runtime for JsError")]
     fn test_calculator_error_handling() {
         let mut calculator: Calculator = Calculator::new(2022, 2025);
         assert!(calculator.get_results("non_existent_id").is_err());
@@ -609,6 +608,7 @@ mod unit_tests{
     }
 
     #[test]
+    #[cfg_attr(not(target_arch = "wasm32"), ignore = "requires wasm32 runtime for JsError")]
     fn test_set_input_values() {
         let mut calculator = Calculator::new(2022, 2025);
         let oil_prices = vec![0.82, 0.88, 0.95, 1.10];

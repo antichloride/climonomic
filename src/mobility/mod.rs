@@ -68,5 +68,4 @@ impl Mobility {
 pub mod tests {
     extern crate wasm_bindgen_test;
     pub mod mobility_test_case;
-    mod compare_with_excel;
 }

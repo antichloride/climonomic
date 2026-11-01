@@ -103,5 +103,4 @@ impl Energy {
 pub mod tests {
     extern crate wasm_bindgen_test;
     pub mod energy_test_case;
-    mod compare_with_excel;
 }

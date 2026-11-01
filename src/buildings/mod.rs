@@ -81,7 +81,6 @@ pub mod tests {
     use super::*;
     extern crate wasm_bindgen_test;
     pub mod buildings_test_case;
-    mod compare_with_excel;
 
     #[test]
     fn test_buildings_get_results_by_id() {

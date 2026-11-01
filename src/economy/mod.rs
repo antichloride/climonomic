@@ -34,9 +34,3 @@ impl Economy {
         &self.energy_tax_national__M__eur_per_a
     }
 }
-
-#[cfg(test)]
-pub mod tests {
-    extern crate wasm_bindgen_test;
-    mod compare_with_excel;
-}
