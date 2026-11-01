@@ -141,6 +141,146 @@ total_heat_dmd__M__W_h_per_m2_a = &total_heat_dmd__G__W_h_per_a / &floor_A__k__m
 
 ---
 
+### `cnsmp_oil__G__W_h_per_a`
+
+> **Description:** Space heating fuel consumption from non-condensing oil systems
+
+**Source:** Declarative Macro (`src/equations.rs` &rarr; Wasm API)
+
+$$
+\mathrm{cnsmp\_oil} = \frac{\mathrm{A\_heat\_oil} \cdot \mathrm{total\_heat\_dmd}}{None}
+$$
+
+**Formula Expression:**
+```rust
+cnsmp_oil__G__W_h_per_a = &A_heat_oil__k__m2 * &total_heat_dmd__M__W_h_per_m2_a / constants::oil_no_condensing.efficency;
+```
+
+**Verification Status:** ✅ **Verified Physical Balance**
+
+#### Variable & Unit Breakdown
+
+| Variable / Argument | Role | Encoded Unit | LaTeX Unit | Physical Dimension |
+| :--- | :--- | :--- | :--- | :--- |
+| `cnsmp_oil__G__W_h_per_a` | **LHS (Result)** | `G__W_h_per_a` | $\text{GWh}/\text{a}$ | Power, 1 / Time (annual), Time (hours) |
+| `A_heat_oil__k__m2` | Input / Variable | `k__m2` | $10^3\text{ m}^2$ | Area |
+| `total_heat_dmd__M__W_h_per_m2_a` | Input / Variable | `M__W_h_per_m2_a` | $\text{MWh}/(\text{m}^2\cdot\text{a})$ | 1 / Area, Power, 1 / Time (annual), Time (hours) |
+| `oil_no_condensing` | Parameter / Constant | `none` | $\text{dimensionless}$ | Dimensionless / Count |
+
+---
+
+### `cnsmp_oil_condensing__G__W_h_per_a`
+
+> **Description:** Space heating fuel consumption from condensing oil systems
+
+**Source:** Declarative Macro (`src/equations.rs` &rarr; Wasm API)
+
+$$
+\mathrm{cnsmp\_oil\_condensing} = \frac{\mathrm{A\_heat\_oil\_condensing} \cdot \mathrm{total\_heat\_dmd}}{None}
+$$
+
+**Formula Expression:**
+```rust
+cnsmp_oil_condensing__G__W_h_per_a = &A_heat_oil_condensing__k__m2 * &total_heat_dmd__M__W_h_per_m2_a / constants::oil_with_condensing.efficency;
+```
+
+**Verification Status:** ✅ **Verified Physical Balance**
+
+#### Variable & Unit Breakdown
+
+| Variable / Argument | Role | Encoded Unit | LaTeX Unit | Physical Dimension |
+| :--- | :--- | :--- | :--- | :--- |
+| `cnsmp_oil_condensing__G__W_h_per_a` | **LHS (Result)** | `G__W_h_per_a` | $\text{GWh}/\text{a}$ | Power, 1 / Time (annual), Time (hours) |
+| `A_heat_oil_condensing__k__m2` | Input / Variable | `k__m2` | $10^3\text{ m}^2$ | Area |
+| `total_heat_dmd__M__W_h_per_m2_a` | Input / Variable | `M__W_h_per_m2_a` | $\text{MWh}/(\text{m}^2\cdot\text{a})$ | 1 / Area, Power, 1 / Time (annual), Time (hours) |
+| `oil_with_condensing` | Parameter / Constant | `none` | $\text{dimensionless}$ | Dimensionless / Count |
+
+---
+
+### `cnsmp_gas__G__W_h_per_a`
+
+> **Description:** Space heating fuel consumption from natural gas systems
+
+**Source:** Declarative Macro (`src/equations.rs` &rarr; Wasm API)
+
+$$
+\mathrm{cnsmp\_gas} = \frac{\mathrm{A\_heat\_gas} \cdot \mathrm{total\_heat\_dmd}}{None}
+$$
+
+**Formula Expression:**
+```rust
+cnsmp_gas__G__W_h_per_a = &A_heat_gas__k__m2 * &total_heat_dmd__M__W_h_per_m2_a / constants::gas.efficency;
+```
+
+**Verification Status:** ✅ **Verified Physical Balance**
+
+#### Variable & Unit Breakdown
+
+| Variable / Argument | Role | Encoded Unit | LaTeX Unit | Physical Dimension |
+| :--- | :--- | :--- | :--- | :--- |
+| `cnsmp_gas__G__W_h_per_a` | **LHS (Result)** | `G__W_h_per_a` | $\text{GWh}/\text{a}$ | Power, 1 / Time (annual), Time (hours) |
+| `A_heat_gas__k__m2` | Input / Variable | `k__m2` | $10^3\text{ m}^2$ | Area |
+| `total_heat_dmd__M__W_h_per_m2_a` | Input / Variable | `M__W_h_per_m2_a` | $\text{MWh}/(\text{m}^2\cdot\text{a})$ | 1 / Area, Power, 1 / Time (annual), Time (hours) |
+| `gas` | Parameter / Constant | `none` | $\text{dimensionless}$ | Dimensionless / Count |
+
+---
+
+### `cnsmp_district_heating__G__W_h_per_a`
+
+> **Description:** Thermal energy supplied by district heating networks
+
+**Source:** Declarative Macro (`src/equations.rs` &rarr; Wasm API)
+
+$$
+\mathrm{cnsmp\_district\_heating} = \frac{\mathrm{A\_heat\_district\_heating} \cdot \mathrm{total\_heat\_dmd}}{None}
+$$
+
+**Formula Expression:**
+```rust
+cnsmp_district_heating__G__W_h_per_a = &A_heat_district_heating__k__m2 * &total_heat_dmd__M__W_h_per_m2_a / constants::district_heating.efficency;
+```
+
+**Verification Status:** ✅ **Verified Physical Balance**
+
+#### Variable & Unit Breakdown
+
+| Variable / Argument | Role | Encoded Unit | LaTeX Unit | Physical Dimension |
+| :--- | :--- | :--- | :--- | :--- |
+| `cnsmp_district_heating__G__W_h_per_a` | **LHS (Result)** | `G__W_h_per_a` | $\text{GWh}/\text{a}$ | Power, 1 / Time (annual), Time (hours) |
+| `A_heat_district_heating__k__m2` | Input / Variable | `k__m2` | $10^3\text{ m}^2$ | Area |
+| `total_heat_dmd__M__W_h_per_m2_a` | Input / Variable | `M__W_h_per_m2_a` | $\text{MWh}/(\text{m}^2\cdot\text{a})$ | 1 / Area, Power, 1 / Time (annual), Time (hours) |
+| `district_heating` | Parameter / Constant | `none` | $\text{dimensionless}$ | Dimensionless / Count |
+
+---
+
+### `cnsmp_elec_heat_pump__G__W_h_per_a`
+
+> **Description:** Electricity consumption of heat pump heating systems
+
+**Source:** Declarative Macro (`src/equations.rs` &rarr; Wasm API)
+
+$$
+\mathrm{cnsmp\_elec\_heat\_pump} = \frac{\mathrm{A\_heat\_heat\_pump} \cdot \mathrm{total\_heat\_dmd}}{None}
+$$
+
+**Formula Expression:**
+```rust
+cnsmp_elec_heat_pump__G__W_h_per_a = &A_heat_heat_pump__k__m2 * &total_heat_dmd__M__W_h_per_m2_a / constants::heat_pump.efficency;
+```
+
+**Verification Status:** ✅ **Verified Physical Balance**
+
+#### Variable & Unit Breakdown
+
+| Variable / Argument | Role | Encoded Unit | LaTeX Unit | Physical Dimension |
+| :--- | :--- | :--- | :--- | :--- |
+| `cnsmp_elec_heat_pump__G__W_h_per_a` | **LHS (Result)** | `G__W_h_per_a` | $\text{GWh}/\text{a}$ | Power, 1 / Time (annual), Time (hours) |
+| `A_heat_heat_pump__k__m2` | Input / Variable | `k__m2` | $10^3\text{ m}^2$ | Area |
+| `total_heat_dmd__M__W_h_per_m2_a` | Input / Variable | `M__W_h_per_m2_a` | $\text{MWh}/(\text{m}^2\cdot\text{a})$ | 1 / Area, Power, 1 / Time (annual), Time (hours) |
+| `heat_pump` | Parameter / Constant | `none` | $\text{dimensionless}$ | Dimensionless / Count |
+
+---
+
 ### `cnsmp_other__G__W_h_per_a`
 
 > **Description:** Other heating fuel consumption
@@ -357,6 +497,68 @@ costs_client_district_heating__M__eur_per_a = &results.cnsmp_district_heating__G
 | `costs_client_district_heating__M__eur_per_a` | **LHS (Result)** | `M__eur_per_a` | $\text{M€}/\text{a}$ | Financial Currency (€), 1 / Time (annual) |
 | `cnsmp_district_heating__G__W_h_per_a` | Input / Variable | `G__W_h_per_a` | $\text{GWh}/\text{a}$ | Power, 1 / Time (annual), Time (hours) |
 | `price_district_heating__m__eur_per_W_h` | Input / Variable | `m__eur_per_W_h` | $\text{m€}/\text{Wh}$ | Financial Currency (€), 1 / Power, 1 / Time (hours) |
+
+---
+
+### `invest_heat_sources__M__eur_per_a`
+
+> **Description:** Total annual capital expenditure for heating system transitions
+
+**Source:** Declarative Macro (`src/equations.rs` &rarr; Wasm API)
+
+$$
+\mathrm{invest\_heat\_sources} = \mathrm{invest\_oil\_no\_condensing} + \mathrm{invest\_oil\_with\_condensing} + \mathrm{invest\_gas} + \mathrm{invest\_district\_heating} + \mathrm{invest\_heat\_pump} + \mathrm{invest\_other}
+$$
+
+**Formula Expression:**
+```rust
+invest_heat_sources__M__eur_per_a = invest_oil_no_condensing + invest_oil_with_condensing + invest_gas + invest_district_heating + invest_heat_pump + invest_other;
+```
+
+**Verification Status:** ⚠️ **Discrepancy Note**: Dimensional mismatch: LHS {'currency': 1, 'time_a': -1} vs RHS {}
+
+#### Variable & Unit Breakdown
+
+| Variable / Argument | Role | Encoded Unit | LaTeX Unit | Physical Dimension |
+| :--- | :--- | :--- | :--- | :--- |
+| `invest_heat_sources__M__eur_per_a` | **LHS (Result)** | `M__eur_per_a` | $\text{M€}/\text{a}$ | Financial Currency (€), 1 / Time (annual) |
+| `invest_other` | Parameter / Constant | `none` | $\text{dimensionless}$ | Dimensionless / Count |
+| `invest_heat_pump` | Parameter / Constant | `none` | $\text{dimensionless}$ | Dimensionless / Count |
+| `invest_district_heating` | Parameter / Constant | `none` | $\text{dimensionless}$ | Dimensionless / Count |
+| `invest_gas` | Parameter / Constant | `none` | $\text{dimensionless}$ | Dimensionless / Count |
+| `invest_oil_no_condensing` | Parameter / Constant | `none` | $\text{dimensionless}$ | Dimensionless / Count |
+| `invest_oil_with_condensing` | Parameter / Constant | `none` | $\text{dimensionless}$ | Dimensionless / Count |
+
+---
+
+### `grant_heat_sources__M__eur_per_a`
+
+> **Description:** Total annual subsidies and grants for heating system transitions
+
+**Source:** Declarative Macro (`src/equations.rs` &rarr; Wasm API)
+
+$$
+\mathrm{grant\_heat\_sources} = \mathrm{grant\_oil\_no\_condensing} + \mathrm{grant\_oil\_with\_condensing} + \mathrm{grant\_gas} + \mathrm{grant\_district\_heating} + \mathrm{grant\_heat\_pump} + \mathrm{grant\_other}
+$$
+
+**Formula Expression:**
+```rust
+grant_heat_sources__M__eur_per_a = grant_oil_no_condensing + grant_oil_with_condensing + grant_gas + grant_district_heating + grant_heat_pump + grant_other;
+```
+
+**Verification Status:** ⚠️ **Discrepancy Note**: Dimensional mismatch: LHS {'currency': 1, 'time_a': -1} vs RHS {}
+
+#### Variable & Unit Breakdown
+
+| Variable / Argument | Role | Encoded Unit | LaTeX Unit | Physical Dimension |
+| :--- | :--- | :--- | :--- | :--- |
+| `grant_heat_sources__M__eur_per_a` | **LHS (Result)** | `M__eur_per_a` | $\text{M€}/\text{a}$ | Financial Currency (€), 1 / Time (annual) |
+| `grant_other` | Parameter / Constant | `none` | $\text{dimensionless}$ | Dimensionless / Count |
+| `grant_heat_pump` | Parameter / Constant | `none` | $\text{dimensionless}$ | Dimensionless / Count |
+| `grant_district_heating` | Parameter / Constant | `none` | $\text{dimensionless}$ | Dimensionless / Count |
+| `grant_gas` | Parameter / Constant | `none` | $\text{dimensionless}$ | Dimensionless / Count |
+| `grant_oil_no_condensing` | Parameter / Constant | `none` | $\text{dimensionless}$ | Dimensionless / Count |
+| `grant_oil_with_condensing` | Parameter / Constant | `none` | $\text{dimensionless}$ | Dimensionless / Count |
 
 ---
 
@@ -3054,6 +3256,6 @@ federal_cash_flow_netto__M__eur_per_a = federal_additional_expenses__M__eur_per_
 
 ## Summary Statistics
 
-- **Total Equations Extracted:** 108
-- **Equations Verified (100% Dimensional & Scale Balance):** 82
-- **Verification Pass Rate:** 75.9%
+- **Total Equations Extracted:** 115
+- **Equations Verified (100% Dimensional & Scale Balance):** 87
+- **Verification Pass Rate:** 75.7%

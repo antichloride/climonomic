@@ -68,67 +68,62 @@ impl Buildings {
             total_heat_dmd__M__W_h_per_m2_a = &total_heat_dmd__G__W_h_per_a / &floor_A__k__m2;
         }
 
-        macro_rules! implement_heat_types_input_consumption {
-            ($((
-                $heat_type: ident,
-                $heat_type_A: ident,
-                $heat_type_cnsmp_in: ident
-            )),*) => {
-                $(
-                    let $heat_type_A =
-                        self.inputs.$heat_type_A.get_year(year);
-                    let $heat_type_cnsmp_in = &$heat_type_A
-                        * &total_heat_dmd__M__W_h_per_m2_a
-                        / constants::$heat_type.efficency;
-                    results.$heat_type_cnsmp_in
-                        .set_year_values(year, &$heat_type_cnsmp_in);
-                )*
-
-                let A_heat_other__k__m2 =
-                    compute_A_heat_other__k__m2(&self.inputs, year);
-                crate::equation! {
-                    /// Other heating fuel consumption
-                    results.cnsmp_other__G__W_h_per_a[year] = &A_heat_other__k__m2
-                        * &total_heat_dmd__M__W_h_per_m2_a
-                        / constants::other.efficency;
-                }
-
-                let price_other_output_nrg__m__eur_per_W_h =
-                    self.inputs.price_other_output_nrg__m__eur_per_W_h.get_year(year);
-                crate::equation! {
-                    /// Other heating fuel expenditures
-                    results.costs_other__M__eur_per_a[year] = &cnsmp_other__G__W_h_per_a
-                        * price_other_output_nrg__m__eur_per_W_h;
-                }
-            }
+        let A_heat_oil__k__m2 = self.inputs.A_heat_oil__k__m2.get_year(year);
+        crate::equation! {
+            /// Space heating fuel consumption from non-condensing oil systems
+            results.cnsmp_oil__G__W_h_per_a[year] = &A_heat_oil__k__m2
+                * &total_heat_dmd__M__W_h_per_m2_a
+                / constants::oil_no_condensing.efficency;
         }
 
-        implement_heat_types_input_consumption! {
-            (
-                oil_no_condensing,
-                A_heat_oil__k__m2,
-                cnsmp_oil__G__W_h_per_a
-            ),
-            (
-                oil_with_condensing,
-                A_heat_oil_condensing__k__m2,
-                cnsmp_oil_condensing__G__W_h_per_a
-            ),
-            (
-                gas,
-                A_heat_gas__k__m2,
-                cnsmp_gas__G__W_h_per_a
-            ),
-            (
-                district_heating,
-                A_heat_district_heating__k__m2,
-                cnsmp_district_heating__G__W_h_per_a
-            ),
-            (
-                heat_pump,
-                A_heat_heat_pump__k__m2,
-                cnsmp_elec_heat_pump__G__W_h_per_a
-            )
+        let A_heat_oil_condensing__k__m2 =
+            self.inputs.A_heat_oil_condensing__k__m2.get_year(year);
+        crate::equation! {
+            /// Space heating fuel consumption from condensing oil systems
+            results.cnsmp_oil_condensing__G__W_h_per_a[year] = &A_heat_oil_condensing__k__m2
+                * &total_heat_dmd__M__W_h_per_m2_a
+                / constants::oil_with_condensing.efficency;
+        }
+
+        let A_heat_gas__k__m2 = self.inputs.A_heat_gas__k__m2.get_year(year);
+        crate::equation! {
+            /// Space heating fuel consumption from natural gas systems
+            results.cnsmp_gas__G__W_h_per_a[year] = &A_heat_gas__k__m2
+                * &total_heat_dmd__M__W_h_per_m2_a
+                / constants::gas.efficency;
+        }
+
+        let A_heat_district_heating__k__m2 =
+            self.inputs.A_heat_district_heating__k__m2.get_year(year);
+        crate::equation! {
+            /// Thermal energy supplied by district heating networks
+            results.cnsmp_district_heating__G__W_h_per_a[year] = &A_heat_district_heating__k__m2
+                * &total_heat_dmd__M__W_h_per_m2_a
+                / constants::district_heating.efficency;
+        }
+
+        let A_heat_heat_pump__k__m2 = self.inputs.A_heat_heat_pump__k__m2.get_year(year);
+        crate::equation! {
+            /// Electricity consumption of heat pump heating systems
+            results.cnsmp_elec_heat_pump__G__W_h_per_a[year] = &A_heat_heat_pump__k__m2
+                * &total_heat_dmd__M__W_h_per_m2_a
+                / constants::heat_pump.efficency;
+        }
+
+        let A_heat_other__k__m2 = compute_A_heat_other__k__m2(&self.inputs, year);
+        crate::equation! {
+            /// Other heating fuel consumption
+            results.cnsmp_other__G__W_h_per_a[year] = &A_heat_other__k__m2
+                * &total_heat_dmd__M__W_h_per_m2_a
+                / constants::other.efficency;
+        }
+
+        let price_other_output_nrg__m__eur_per_W_h =
+            self.inputs.price_other_output_nrg__m__eur_per_W_h.get_year(year);
+        crate::equation! {
+            /// Other heating fuel expenditures
+            results.costs_other__M__eur_per_a[year] = &cnsmp_other__G__W_h_per_a
+                * price_other_output_nrg__m__eur_per_W_h;
         }
 
         // Excel row 79: (C69 + C74) / 10.0 (in Mio. L)
@@ -200,83 +195,105 @@ impl Buildings {
 
         // Invests and Grants (Excel rows 143, 148, 164, 169)
         if year != self.start_year {
-            let mut invest_heat_sources__M__eur_per_a = SectorsRawValues::new();
-            let mut grant_heat_sources__M__eur_per_a = SectorsRawValues::new();
             let heat_dmd_prev_year__k__W_h_per_m2_a =
                 self.inputs.heat_dmd__k__W_h_per_m2_a.get_year(year - 1);
 
-            macro_rules! implement_invest_calculation_heating {
-                ($(($heat_type: ident, $heat_type_A__k__m2: ident)),*) => {
-                    let mut A_this_year__k__m2: SectorsRawValues;
-                    let mut A_prev_year__k__m2: SectorsRawValues;
-                    let mut invest_heat_source__M__eur_per_a: SectorsRawValues;
-                    let mut grant_heat_source__M__eur_per_a: SectorsRawValues;
+            // 1. Oil non-condensing
+            let A_oil_now = self.inputs.A_heat_oil__k__m2.get_year(year);
+            let A_oil_prev = self.inputs.A_heat_oil__k__m2.get_year(year - 1);
+            let invest_oil_no_condensing = 1e-3
+                * (&A_oil_now - &A_oil_prev)
+                * constants::oil_no_condensing.invest__m__eur_per_W_h
+                * &heat_dmd_prev_year__k__W_h_per_m2_a
+                * A_oil_now.is_greater(&A_oil_prev);
+            let grant_oil_no_condensing = (&A_oil_now - &A_oil_prev)
+                * constants::oil_no_condensing.invest__m__eur_per_W_h
+                * constants::oil_no_condensing.grant
+                * A_oil_now.is_greater(&A_oil_prev);
 
-                    $(
-                        A_this_year__k__m2 =
-                            self.inputs.$heat_type_A__k__m2.get_year(year);
-                        A_prev_year__k__m2 =
-                            self.inputs.$heat_type_A__k__m2.get_year(year - 1);
+            // 2. Oil condensing
+            let A_oil_cond_now = self.inputs.A_heat_oil_condensing__k__m2.get_year(year);
+            let A_oil_cond_prev = self.inputs.A_heat_oil_condensing__k__m2.get_year(year - 1);
+            let invest_oil_with_condensing = 1e-3
+                * (&A_oil_cond_now - &A_oil_cond_prev)
+                * constants::oil_with_condensing.invest__m__eur_per_W_h
+                * &heat_dmd_prev_year__k__W_h_per_m2_a
+                * A_oil_cond_now.is_greater(&A_oil_cond_prev);
+            let grant_oil_with_condensing = (&A_oil_cond_now - &A_oil_cond_prev)
+                * constants::oil_with_condensing.invest__m__eur_per_W_h
+                * constants::oil_with_condensing.grant
+                * A_oil_cond_now.is_greater(&A_oil_cond_prev);
 
-                        // Excel row 143: delta_area * invest * heat_dmd_prev / 1000
-                        invest_heat_source__M__eur_per_a = 1e-3
-                            * (&A_this_year__k__m2 - &A_prev_year__k__m2)
-                            * constants::$heat_type.invest__m__eur_per_W_h
-                            * &heat_dmd_prev_year__k__W_h_per_m2_a
-                            * A_this_year__k__m2.is_greater(&A_prev_year__k__m2);
+            // 3. Gas
+            let A_gas_now = self.inputs.A_heat_gas__k__m2.get_year(year);
+            let A_gas_prev = self.inputs.A_heat_gas__k__m2.get_year(year - 1);
+            let invest_gas = 1e-3
+                * (&A_gas_now - &A_gas_prev)
+                * constants::gas.invest__m__eur_per_W_h
+                * &heat_dmd_prev_year__k__W_h_per_m2_a
+                * A_gas_now.is_greater(&A_gas_prev);
+            let grant_gas = (&A_gas_now - &A_gas_prev)
+                * constants::gas.invest__m__eur_per_W_h
+                * constants::gas.grant
+                * A_gas_now.is_greater(&A_gas_prev);
 
-                        // Excel row 164: delta_area * invest * grant
-                        grant_heat_source__M__eur_per_a =
-                            (&A_this_year__k__m2 - &A_prev_year__k__m2)
-                            * constants::$heat_type.invest__m__eur_per_W_h
-                            * constants::$heat_type.grant
-                            * A_this_year__k__m2.is_greater(&A_prev_year__k__m2);
+            // 4. District heating
+            let A_dist_now = self.inputs.A_heat_district_heating__k__m2.get_year(year);
+            let A_dist_prev = self.inputs.A_heat_district_heating__k__m2.get_year(year - 1);
+            let invest_district_heating = 1e-3
+                * (&A_dist_now - &A_dist_prev)
+                * constants::district_heating.invest__m__eur_per_W_h
+                * &heat_dmd_prev_year__k__W_h_per_m2_a
+                * A_dist_now.is_greater(&A_dist_prev);
+            let grant_district_heating = (&A_dist_now - &A_dist_prev)
+                * constants::district_heating.invest__m__eur_per_W_h
+                * constants::district_heating.grant
+                * A_dist_now.is_greater(&A_dist_prev);
 
-                        invest_heat_sources__M__eur_per_a =
-                            invest_heat_sources__M__eur_per_a + invest_heat_source__M__eur_per_a;
+            // 5. Heat pump
+            let A_hp_now = self.inputs.A_heat_heat_pump__k__m2.get_year(year);
+            let A_hp_prev = self.inputs.A_heat_heat_pump__k__m2.get_year(year - 1);
+            let invest_heat_pump = 1e-3
+                * (&A_hp_now - &A_hp_prev)
+                * constants::heat_pump.invest__m__eur_per_W_h
+                * &heat_dmd_prev_year__k__W_h_per_m2_a
+                * A_hp_now.is_greater(&A_hp_prev);
+            let grant_heat_pump = (&A_hp_now - &A_hp_prev)
+                * constants::heat_pump.invest__m__eur_per_W_h
+                * constants::heat_pump.grant
+                * A_hp_now.is_greater(&A_hp_prev);
 
-                        grant_heat_sources__M__eur_per_a =
-                            grant_heat_sources__M__eur_per_a + grant_heat_source__M__eur_per_a;
-                    )*
+            // 6. Other heating
+            let A_other_now = compute_A_heat_other__k__m2(&self.inputs, year);
+            let A_other_prev = compute_A_heat_other__k__m2(&self.inputs, year - 1);
+            let invest_other = 1e-3
+                * (&A_other_now - &A_other_prev)
+                * constants::other.invest__m__eur_per_W_h
+                * &heat_dmd_prev_year__k__W_h_per_m2_a
+                * A_other_now.is_greater(&A_other_prev);
+            let grant_other = (&A_other_now - &A_other_prev)
+                * constants::other.invest__m__eur_per_W_h
+                * constants::other.grant
+                * A_other_now.is_greater(&A_other_prev);
 
-                    A_this_year__k__m2 =
-                        compute_A_heat_other__k__m2(&self.inputs, year);
-                    A_prev_year__k__m2 =
-                        compute_A_heat_other__k__m2(&self.inputs, year - 1);
-
-                    invest_heat_source__M__eur_per_a = 1e-3
-                        * (&A_this_year__k__m2 - &A_prev_year__k__m2)
-                        * constants::other.invest__m__eur_per_W_h
-                        * &heat_dmd_prev_year__k__W_h_per_m2_a
-                        * A_this_year__k__m2.is_greater(&A_prev_year__k__m2);
-
-                    grant_heat_source__M__eur_per_a =
-                        (&A_this_year__k__m2 - &A_prev_year__k__m2)
-                        * constants::other.invest__m__eur_per_W_h
-                        * constants::other.grant
-                        * A_this_year__k__m2.is_greater(&A_prev_year__k__m2);
-
-                    invest_heat_sources__M__eur_per_a =
-                        invest_heat_sources__M__eur_per_a + invest_heat_source__M__eur_per_a;
-
-                    grant_heat_sources__M__eur_per_a =
-                        grant_heat_sources__M__eur_per_a + grant_heat_source__M__eur_per_a;
-
-                    results
-                        .invest_heat_sources__M__eur_per_a
-                        .set_year_values(year, &invest_heat_sources__M__eur_per_a);
-                    results
-                        .grant_heat_sources__M__eur_per_a
-                        .set_year_values(year, &grant_heat_sources__M__eur_per_a);
-                }
+            crate::equation! {
+                /// Total annual capital expenditure for heating system transitions
+                results.invest_heat_sources__M__eur_per_a[year] = invest_oil_no_condensing
+                    + invest_oil_with_condensing
+                    + invest_gas
+                    + invest_district_heating
+                    + invest_heat_pump
+                    + invest_other;
             }
 
-            implement_invest_calculation_heating! {
-                (oil_no_condensing, A_heat_oil__k__m2),
-                (oil_with_condensing, A_heat_oil_condensing__k__m2),
-                (gas, A_heat_gas__k__m2),
-                (district_heating, A_heat_district_heating__k__m2),
-                (heat_pump, A_heat_heat_pump__k__m2)
+            crate::equation! {
+                /// Total annual subsidies and grants for heating system transitions
+                results.grant_heat_sources__M__eur_per_a[year] = grant_oil_no_condensing
+                    + grant_oil_with_condensing
+                    + grant_gas
+                    + grant_district_heating
+                    + grant_heat_pump
+                    + grant_other;
             }
 
             // Excel row 148: (heat_dmd_prev - heat_dmd_this) * 2.5 * floor_A / 1000
