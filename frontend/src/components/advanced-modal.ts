@@ -196,7 +196,7 @@ function renderSectorRow(
       </td>
       ${sectors.map(sec => {
         const id = `${param.domain}/inputs/${param.param}/${sec.key}`;
-        const defVal = getBaselineValueForId(id, s.population);
+        const defVal = getBaselineValueForId(id, s.population, s.extractorInputs);
         const isOverridden = overrides[id] !== undefined;
         const currentVal = isOverridden ? overrides[id] : defVal;
         const formattedVal = Number.isInteger(currentVal) ? currentVal : currentVal.toFixed(2);
@@ -227,7 +227,7 @@ function renderScalarCard(
 ): string {
   const overrides = s.expertOverrides || {};
   const id = param.id;
-  const defVal = getBaselineValueForId(id, s.population);
+  const defVal = getBaselineValueForId(id, s.population, s.extractorInputs);
   const isOverridden = overrides[id] !== undefined;
   const currentVal = isOverridden ? overrides[id] : defVal;
   const formattedVal = Number.isInteger(currentVal) ? currentVal : currentVal.toFixed(2);
@@ -326,7 +326,7 @@ function setupModalInteractions(modal: HTMLElement) {
     modal.querySelectorAll<HTMLInputElement>('.expert-input').forEach(inp => {
       const id = inp.getAttribute('data-id');
       if (id) {
-        const def = getBaselineValueForId(id, s.population);
+        const def = getBaselineValueForId(id, s.population, s.extractorInputs);
         inp.value = Number.isInteger(def) ? def.toString() : def.toFixed(2);
         inp.setAttribute('data-default', def.toString());
         inp.classList.remove('is-overridden');
@@ -345,7 +345,7 @@ function setupModalInteractions(modal: HTMLElement) {
       const id = inp.getAttribute('data-id');
       if (id) {
         const val = Number(inp.value);
-        const def = getBaselineValueForId(id, s.population);
+        const def = getBaselineValueForId(id, s.population, s.extractorInputs);
 
         if (!isNaN(val) && Math.abs(val - def) > 0.0001) {
           newOverrides[id] = val;

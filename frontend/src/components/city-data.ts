@@ -29,10 +29,10 @@ export function renderCityDataCard(): string {
         </div>
 
         <div class="field-group">
-          <label class="field-label" for="input-city-pop">Anzahl Einwohner</label>
+          <label class="field-label" for="input-city-pop">Einwohner (in 1.000)</label>
           <div class="input-with-unit">
-            <input type="number" id="input-city-pop" class="input-control num" value="${s.population}" step="1000" min="1000" max="5000000" />
-            <span class="unit-label">Ew.</span>
+            <input type="number" id="input-city-pop" class="input-control num" value="${s.population}" step="any" min="0.001" max="100000" />
+            <span class="unit-label">1.000 Ew.</span>
           </div>
         </div>
 

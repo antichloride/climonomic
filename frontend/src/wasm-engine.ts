@@ -525,7 +525,7 @@ export function runSimulation(state: CityBaseline): SimulationOutput {
       } else if (id === 'mobility/inputs/price_fuel__eur_per_L') {
         val = state.pricePetrol;
       } else {
-        val = getBaselineValueForId(id, state.population);
+        val = getBaselineValueForId(id, state.population, state.extractorInputs);
       }
     }
     baselineValues[id] = val;
@@ -538,7 +538,7 @@ export function runSimulation(state: CityBaseline): SimulationOutput {
     baselineValues[calcId] = val;
   }
 
-  const refPop = REFERENCE_POPULATION * 1000;
+  const refPop = REFERENCE_POPULATION;
   const popScale = state.population > 0 ? state.population / refPop : 1.0;
 
   const b = (state.extractorInputs?.buildings || (DEFAULT_EXTRACTOR_INPUTS as any).buildings) as any;
@@ -791,23 +791,27 @@ export function runSimulation(state: CityBaseline): SimulationOutput {
   const startCO2Total = Math.max(1, runBaseline.totalCO2[0]);
   const endCO2Baseline = runBaseline.totalCO2[endIdx] ?? runBaseline.totalCO2[runBaseline.totalCO2.length - 1];
   const endCO2Active = runActive.totalCO2[endIdx] ?? runActive.totalCO2[runActive.totalCO2.length - 1];
-  const co2ReductionTsdTonnes = Math.max(0, endCO2Baseline - endCO2Active);
+  const extraAvoidedBaseline = (runBaseline.solOsNrgTotal[endIdx] + runBaseline.windNrgTotal[endIdx] + runBaseline.greenNrgTotal[endIdx]) * 0.401;
+  const extraAvoidedActive = (runActive.solOsNrgTotal[endIdx] + runActive.windNrgTotal[endIdx] + runActive.greenNrgTotal[endIdx]) * 0.401;
+  const extraAvoidedDiff = Math.max(0, extraAvoidedActive - extraAvoidedBaseline);
+  const co2ReductionTsdTonnes = Math.max(0, endCO2Baseline - endCO2Active) + extraAvoidedDiff;
   const overallReductionPct = Math.min(100, Math.max(0, (co2ReductionTsdTonnes / startCO2Total) * 100));
 
-  const totalInvestMio = runActive.totalInvestSum || 354 * (state.population / 50000);
-  const directEffectsMio = runActive.totalEffSum || 740 * (state.population / 50000);
-  const indirectEffectsMio = runActive.comTaxSum || 28 * (state.population / 50000);
-  const localTurnoverMio = runActive.turnoverSum || 142 * (state.population / 50000);
+  const popScaleRatio = state.population / REFERENCE_POPULATION;
+  const totalInvestMio = runActive.totalInvestSum || 103806 * popScaleRatio;
+  const directEffectsMio = runActive.totalEffSum || 11053 * popScaleRatio;
+  const indirectEffectsMio = runActive.comTaxSum || 2800 * popScaleRatio;
+  const localTurnoverMio = runActive.turnoverSum || 14200 * popScaleRatio;
   const localJobs = Math.round(
     Math.max(...runActive.jobsSeries.slice(0, endIdx + 1)) ||
-      43 * (state.population / 50000)
+      4300 * popScaleRatio
   );
 
   // Helper to scale extractor inputs when population differs from nationwide reference
   const getScaledExtractorInputs = (s: CityBaseline): any => {
     const inputs = JSON.parse(JSON.stringify(s.extractorInputs || DEFAULT_EXTRACTOR_INPUTS));
     const basePopK = inputs.buildings?.n_inhabitants__k__?.private || 11238.0;
-    const currentPopK = s.population / 1000.0;
+    const currentPopK = s.population;
     if (!basePopK || basePopK <= 0) return inputs;
     const ratio = currentPopK / basePopK;
     if (Math.abs(ratio - 1.0) < 1e-4) {
@@ -932,8 +936,10 @@ export function runSimulation(state: CityBaseline): SimulationOutput {
     jobsPerYear.push(j > 0 ? j : localJobs);
   }
 
-  // 6. Marginal Counterfactual Attribution for Each Measure
+  // 6. Sequential Counterfactual Attribution for Each Measure in Fixed Order
   const measureMetrics: Record<string, MeasurePillMetric> = {};
+  let prevRun = runBaseline;
+  const cumInterventions: MeasureIntervention[] = [];
 
   for (const key of measureKeys) {
     const def = MEASURE_DEFINITIONS[key];
@@ -954,45 +960,38 @@ export function runSimulation(state: CityBaseline): SimulationOutput {
       continue;
     }
 
-    // Leave-one-out: run simulation with all active measures EXCEPT this one
-    let runWithout: SimRunResults;
-    if (activeKeys.length === 1) {
-      runWithout = runBaseline;
-    } else {
-      const withoutInterventions: MeasureIntervention[] = [];
-      for (const otherKey of activeKeys) {
-        if (otherKey !== key) {
-          withoutInterventions.push(...activeInterventionsMap[otherKey]);
-        }
-      }
-      runWithout = executeRun(withoutInterventions);
-    }
+    const currentInterventions = activeInterventionsMap[key] || [];
+    cumInterventions.push(...currentInterventions);
+    const currentRun =
+      cumInterventions.length === allActiveInterventions.length
+        ? runActive
+        : executeRun(cumInterventions);
 
-    // Marginal CO2 reduction:
+    // Marginal sequential CO2 reduction on top of previous measures:
     let extraAvoidedCO2 = 0;
     if (key === 'pvOpen') {
       extraAvoidedCO2 =
         Math.max(
           0,
-          runActive.solOsNrgTotal[endIdx] - runWithout.solOsNrgTotal[endIdx]
+          currentRun.solOsNrgTotal[endIdx] - prevRun.solOsNrgTotal[endIdx]
         ) * 0.401;
     } else if (key === 'wind') {
       extraAvoidedCO2 =
         Math.max(
           0,
-          runActive.windNrgTotal[endIdx] - runWithout.windNrgTotal[endIdx]
+          currentRun.windNrgTotal[endIdx] - prevRun.windNrgTotal[endIdx]
         ) * 0.401;
     } else if (key === 'greenPower') {
       extraAvoidedCO2 =
         Math.max(
           0,
-          runActive.greenNrgTotal[endIdx] - runWithout.greenNrgTotal[endIdx]
+          currentRun.greenNrgTotal[endIdx] - prevRun.greenNrgTotal[endIdx]
         ) * 0.401;
     }
 
     const co2DiffDirect = Math.max(
       0,
-      runWithout.totalCO2[endIdx] - runActive.totalCO2[endIdx]
+      prevRun.totalCO2[endIdx] - currentRun.totalCO2[endIdx]
     );
     const co2ReductionTsdTo = co2DiffDirect + extraAvoidedCO2;
     const co2ReductionPct = Math.min(100, Math.max(0, (co2ReductionTsdTo / startCO2Total) * 100));
@@ -1005,37 +1004,37 @@ export function runSimulation(state: CityBaseline): SimulationOutput {
         extraAvoidedY =
           Math.max(
             0,
-            runActive.solOsNrgTotal[i] - runWithout.solOsNrgTotal[i]
+            currentRun.solOsNrgTotal[i] - prevRun.solOsNrgTotal[i]
           ) * 0.401;
       } else if (key === 'wind') {
         extraAvoidedY =
           Math.max(
             0,
-            runActive.windNrgTotal[i] - runWithout.windNrgTotal[i]
+            currentRun.windNrgTotal[i] - prevRun.windNrgTotal[i]
           ) * 0.401;
       } else if (key === 'greenPower') {
         extraAvoidedY =
           Math.max(
             0,
-            runActive.greenNrgTotal[i] - runWithout.greenNrgTotal[i]
+            currentRun.greenNrgTotal[i] - prevRun.greenNrgTotal[i]
           ) * 0.401;
       }
       cumCO2Reduction +=
-        Math.max(0, runWithout.totalCO2[i] - runActive.totalCO2[i]) +
+        Math.max(0, prevRun.totalCO2[i] - currentRun.totalCO2[i]) +
         extraAvoidedY;
     }
 
-    // CapEx difference:
+    // CapEx difference on top of previous measures:
     const rawInvestDiff = Math.max(
       0,
-      runActive.totalInvestSum - runWithout.totalInvestSum
+      currentRun.totalInvestSum - prevRun.totalInvestSum
     );
     const investMio = rawInvestDiff;
 
     // Direct operational recurring savings achieved per year in target year:
     const directEffectMioYear = Math.max(
       0,
-      runActive.totalEffPerYear[endIdx] - runWithout.totalEffPerYear[endIdx]
+      currentRun.totalEffPerYear[endIdx] - prevRun.totalEffPerYear[endIdx]
     );
 
     // Abatement cost in € / t CO2:
@@ -1046,7 +1045,7 @@ export function runSimulation(state: CityBaseline): SimulationOutput {
       } else {
         const cumEffDiff = Math.max(
           0,
-          runActive.totalEffSum - runWithout.totalEffSum
+          currentRun.totalEffSum - prevRun.totalEffSum
         );
         if (cumEffDiff > 0) {
           costPerTonCO2 = (cumEffDiff * 1000) / cumCO2Reduction;
@@ -1067,8 +1066,8 @@ export function runSimulation(state: CityBaseline): SimulationOutput {
       for (let i = 0; i < nYears; i++) {
         cumSav += Math.max(
           0,
-          (runActive.totalEffPerYear[i] || 0) -
-            (runWithout.totalEffPerYear[i] || 0)
+          (currentRun.totalEffPerYear[i] || 0) -
+            (prevRun.totalEffPerYear[i] || 0)
         );
         if (cumSav >= investMio) {
           breakEvenYear = String(years[i]);
@@ -1088,6 +1087,8 @@ export function runSimulation(state: CityBaseline): SimulationOutput {
       breakEvenYear,
       roiPct,
     };
+
+    prevRun = currentRun;
   }
 
   // Fallback defaults for UI pill slots that might check other keys

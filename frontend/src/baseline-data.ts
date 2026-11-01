@@ -114,7 +114,7 @@ export interface CityBaseline {
 export function createDefaultState(): CityBaseline {
   return {
     cityName: 'Kassel',
-    population: 50000,
+    population: 11238,
     startYear: 2026,
     endYear: 2040,
 
@@ -210,8 +210,13 @@ export function createDefaultState(): CityBaseline {
   };
 }
 
-export function exportStateInputs(state: CityBaseline): ExtractorInputs {
-  return JSON.parse(JSON.stringify(state.extractorInputs));
+export function exportStateInputs(state: CityBaseline): any {
+  return {
+    start_year: state.startYear,
+    end_year: state.endYear,
+    inputs: JSON.parse(JSON.stringify(state.extractorInputs)),
+    measures: (state as any).extractorMeasures || {},
+  };
 }
 
 export function importStateInputs(
@@ -259,21 +264,85 @@ export function importStateInputs(
   if (rootData.measures && typeof rootData.measures === 'object') {
     (state as any).extractorMeasures = JSON.parse(JSON.stringify(rootData.measures));
     const m = rootData.measures;
-    if (m.private?.heat_demand?.target_kWh_per_m2_a) {
+    if (m.private?.heat_demand?.target_kWh_per_m2_a != null) {
       state.measures.heatDmd.targetPrivate = Math.round(m.private.heat_demand.target_kWh_per_m2_a);
     }
-    if (m.industry?.heat_demand?.target_kWh_per_m2_a) {
+    if (m.industry?.heat_demand?.target_kWh_per_m2_a != null) {
       state.measures.heatDmd.targetGHD = Math.round(m.industry.heat_demand.target_kWh_per_m2_a);
     }
-    if (m.public?.heat_demand?.target_kWh_per_m2_a) {
+    if (m.public?.heat_demand?.target_kWh_per_m2_a != null) {
       state.measures.heatDmd.targetKommune = Math.round(m.public.heat_demand.target_kWh_per_m2_a);
+    }
+    if (m.private?.heat_demand?.active != null) {
+      state.measures.heatDmd.enabled = Boolean(m.private.heat_demand.active);
+    }
+
+    if (m.private?.heat_sources_targets__k__m2?.gas != null) {
+      state.measures.gasPhaseout.targetPrivate = Math.round(m.private.heat_sources_targets__k__m2.gas);
+    }
+    if (m.industry?.heat_sources_targets__k__m2?.gas != null) {
+      state.measures.gasPhaseout.targetGHD = Math.round(m.industry.heat_sources_targets__k__m2.gas);
+    }
+    if (m.public?.heat_sources_targets__k__m2?.gas != null) {
+      state.measures.gasPhaseout.targetKommune = Math.round(m.public.heat_sources_targets__k__m2.gas);
+    }
+
+    if (m.private?.heat_sources_targets__k__m2?.oil != null) {
+      state.measures.oilPhaseout.targetPrivate = Math.round(m.private.heat_sources_targets__k__m2.oil);
+    }
+    if (m.industry?.heat_sources_targets__k__m2?.oil != null) {
+      state.measures.oilPhaseout.targetGHD = Math.round(m.industry.heat_sources_targets__k__m2.oil);
+    }
+    if (m.public?.heat_sources_targets__k__m2?.oil != null) {
+      state.measures.oilPhaseout.targetKommune = Math.round(m.public.heat_sources_targets__k__m2.oil);
+    }
+
+    if (m.private?.pv_roof?.target_installed__MWp != null) {
+      state.measures.pvRoof.targetPrivate = Number(m.private.pv_roof.target_installed__MWp.toFixed(1));
+    }
+    if (m.industry?.pv_roof?.target_installed__MWp != null) {
+      state.measures.pvRoof.targetGHD = Number(m.industry.pv_roof.target_installed__MWp.toFixed(1));
+    }
+    if (m.public?.pv_roof?.target_installed__MWp != null) {
+      state.measures.pvRoof.targetKommune = Number(m.public.pv_roof.target_installed__MWp.toFixed(1));
+    }
+
+    if (m.industry?.renewables?.solar_ground_target__MWp != null) {
+      state.measures.pvOpen.targetGHD = Number(m.industry.renewables.solar_ground_target__MWp.toFixed(1));
+    }
+    if (m.municipal_utility?.pv_ground_target__MWp != null) {
+      state.measures.pvOpen.targetKommune = Number(m.municipal_utility.pv_ground_target__MWp.toFixed(1));
+    }
+
+    if (m.industry?.renewables?.wind_target__MWp != null) {
+      state.measures.wind.targetGHD = Number(m.industry.renewables.wind_target__MWp.toFixed(1));
+    }
+    if (m.municipal_utility?.wind_target__MWp != null) {
+      state.measures.wind.targetKommune = Number(m.municipal_utility.wind_target__MWp.toFixed(1));
+    }
+
+    if (m.private?.mobility?.bev_count_target__k__ != null) {
+      state.measures.evCars.targetPrivate = Number(m.private.mobility.bev_count_target__k__.toFixed(1));
+    }
+    if (m.industry?.mobility?.bev_count_target__k__ != null) {
+      state.measures.evCars.targetGHD = Number(m.industry.mobility.bev_count_target__k__.toFixed(1));
+    }
+    if (m.public?.mobility?.bev_count_target__k__ != null) {
+      state.measures.evCars.targetKommune = Number(m.public.mobility.bev_count_target__k__.toFixed(1));
+    }
+
+    if (m.private?.mobility?.modal_split_pt_part != null) {
+      state.measures.transitShare.targetPrivate = Number((m.private.mobility.modal_split_pt_part * 100).toFixed(1));
+    }
+    if (m.private?.mobility?.modal_split_bike_part != null) {
+      state.measures.bikeShare.targetPrivate = Number((m.private.mobility.modal_split_bike_part * 100).toFixed(1));
     }
   }
 
-  // If population is present in the imported data, sync top-level population
+  // If population is present in the imported data, sync top-level population (in 1.000 Ew. dimension)
   if (state.extractorInputs.buildings?.n_inhabitants__k__?.private) {
     const popK = state.extractorInputs.buildings.n_inhabitants__k__.private;
-    state.population = Math.round(popK * 1000);
+    state.population = Math.round(popK);
   }
 
   return {
@@ -305,54 +374,54 @@ export interface ScaledBaselines {
 }
 
 export function computeScaledBaselines(population: number): ScaledBaselines {
-  const popScale = population / 50000;
+  const popScale = population / REFERENCE_POPULATION;
   return {
     popScale,
     buildings: {
-      heatDmdBase: { private: 114, ghd: 96, kommune: 96 },
+      heatDmdBase: { private: 94.8, ghd: 95.6, kommune: 95.6 },
       gasAreaBase: {
-        private: 1133 * popScale,
-        ghd: 461 * popScale,
-        kommune: 46 * popScale,
+        private: 279034.69 * popScale,
+        ghd: 114352.29 * popScale,
+        kommune: 2359.32 * popScale,
       },
       oilAreaBase: {
-        private: 568 * popScale,
-        ghd: 161 * popScale,
-        kommune: 16 * popScale,
+        private: 104028.47 * popScale,
+        ghd: 21453.36 * popScale,
+        kommune: 442.63 * popScale,
       },
     },
     energy: {
       pvRoofBase: {
-        private: 8.4 * popScale,
-        ghd: 11.6 * popScale,
-        kommune: 0.6 * popScale,
+        private: 3837.27 * popScale,
+        ghd: 5347.19 * popScale,
+        kommune: 281.43 * popScale,
       },
       pvOpenBase: {
         private: 0.0,
-        ghd: 18.0 * popScale,
+        ghd: 18.0 * (popScale * 224.76),
         kommune: 0.0,
       },
       windBase: {
         private: 0.0,
-        ghd: 144.9 * popScale,
+        ghd: 144.9 * (popScale * 224.76),
         kommune: 0.0,
       },
       greenPowerBase: {
-        private: 22.4 * popScale,
-        ghd: 20.7 * popScale,
-        kommune: 1.1 * popScale,
+        private: 22.4 * (popScale * 224.76),
+        ghd: 20.7 * (popScale * 224.76),
+        kommune: 1.1 * (popScale * 224.76),
       },
     },
     mobility: {
       carsCountBase: {
-        private: 25.9 * popScale,
-        ghd: 3.0 * popScale,
-        kommune: 0.2 * popScale,
+        private: 5870.12 * popScale,
+        ghd: 731.77 * popScale,
+        kommune: 38.51 * popScale,
       },
       evCountBase: {
-        private: 0.6 * popScale,
-        ghd: 0.1 * popScale,
-        kommune: 0.0,
+        private: 196.50 * popScale,
+        ghd: 24.50 * popScale,
+        kommune: 1.29 * popScale,
       },
       transitShareBase: { private: 14.5, ghd: 14.5, kommune: 29.0 },
       bikeShareBase: { private: 3.2, ghd: 3.2, kommune: 6.4 },
@@ -360,13 +429,17 @@ export function computeScaledBaselines(population: number): ScaledBaselines {
   };
 }
 
-export function getBaselineValueForId(id: string, population: number): number {
+export function getBaselineValueForId(
+  id: string,
+  population: number,
+  customInputs?: any
+): number {
   const parts = id.split('/');
   const domain = parts[0];
   let param = parts[2];
   const sector = parts[3] as SectorKey | undefined;
 
-  const inputs = DEFAULT_EXTRACTOR_INPUTS as any;
+  const inputs = customInputs || (DEFAULT_EXTRACTOR_INPUTS as any);
   if (!inputs[domain]) {
     return 0;
   }
@@ -381,7 +454,7 @@ export function getBaselineValueForId(id: string, population: number): number {
     const air = inputs.buildings?.A_heat_heat_pump_air__k__m2?.[sec] || 0;
     const ground = inputs.buildings?.A_heat_heat_pump_ground__k__m2?.[sec] || 0;
     const baseVal = air + ground;
-    if (population > 0) return (baseVal * population) / (REFERENCE_POPULATION * 1000);
+    if (population > 0) return (baseVal * population) / REFERENCE_POPULATION;
     return baseVal;
   }
   if (param === 'hot_water_dmd__k__W_h_per_m2_a') {
@@ -406,7 +479,7 @@ export function getBaselineValueForId(id: string, population: number): number {
 
   const isExtrinsic = id.includes('n_') || id.includes('floor_A_total') || id.includes('installed') || id.includes('A_heat_');
   if (isExtrinsic && population > 0) {
-    return (baseVal * population) / (REFERENCE_POPULATION * 1000);
+    return (baseVal * population) / REFERENCE_POPULATION;
   }
 
   return baseVal;
