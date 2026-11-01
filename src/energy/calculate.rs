@@ -276,8 +276,11 @@ impl Energy {
         let results = &mut self.results;
 
         // Excel row 235-238: Buildings + Heat pump + BEV
-        let mut elec_nrg_dmd__G__W_h_per_a =
-            &electric_power_demand_buildings + &energy_heating_heat_pump + bev_electric_power_demand;
+        crate::equation! {
+            /// Total electricity demand across buildings, heat pumps, and electric vehicles
+            let mut elec_nrg_dmd__G__W_h_per_a =
+                electric_power_demand_buildings + energy_heating_heat_pump + bev_electric_power_demand;
+        }
         // Public sector includes schools (Excel row 237)
         elec_nrg_dmd__G__W_h_per_a.public += elec_nrg_dmd__G__W_h_per_a.schools;
         elec_nrg_dmd__G__W_h_per_a.schools = 0.0;
@@ -293,10 +296,13 @@ impl Energy {
             inputs.prchsd_renewable_nrg__G__W_h_per_a.get_year(year);
 
         // Excel row 329: IF(elec_nrg_dmd - sol_rf_self_cnsmp - green_direct > 0, ...)
-        let mut prchsd_nrg_mix__G__W_h_per_a = &elec_nrg_dmd__G__W_h_per_a
-            - &sol_rf_self_cnsmp__G__W_h_per_a
-            - &sol_os_self_cnsmp__G__W_h_per_a
-            - &prchsd_renewable_nrg__G__W_h_per_a;
+        crate::equation! {
+            /// Grid electricity demand remaining after self-consumption and direct green power
+            let mut prchsd_nrg_mix__G__W_h_per_a = elec_nrg_dmd__G__W_h_per_a
+                - sol_rf_self_cnsmp__G__W_h_per_a
+                - sol_os_self_cnsmp__G__W_h_per_a
+                - prchsd_renewable_nrg__G__W_h_per_a;
+        }
         if prchsd_nrg_mix__G__W_h_per_a.private < 0.0 { prchsd_nrg_mix__G__W_h_per_a.private = 0.0; }
         if prchsd_nrg_mix__G__W_h_per_a.industry < 0.0 { prchsd_nrg_mix__G__W_h_per_a.industry = 0.0; }
         if prchsd_nrg_mix__G__W_h_per_a.schools < 0.0 { prchsd_nrg_mix__G__W_h_per_a.schools = 0.0; }
@@ -331,7 +337,10 @@ impl Energy {
         }
 
         // Excel row 280: sol_rf_costs / sol_rf_self_cnsmp
-        let mut sol_rf_costs__eur_per_kWh = &sol_rf_costs__M__eur_per_a / &sol_rf_self_cnsmp__G__W_h_per_a;
+        crate::equation! {
+            /// Rooftop solar electricity generation cost per kWh
+            let mut sol_rf_costs__eur_per_kWh = &sol_rf_costs__M__eur_per_a / &sol_rf_self_cnsmp__G__W_h_per_a;
+        }
         if sol_rf_self_cnsmp__G__W_h_per_a.private == 0.0 { sol_rf_costs__eur_per_kWh.private = 0.0; }
         if sol_rf_self_cnsmp__G__W_h_per_a.industry == 0.0 { sol_rf_costs__eur_per_kWh.industry = 0.0; }
         if sol_rf_self_cnsmp__G__W_h_per_a.public == 0.0 { sol_rf_costs__eur_per_kWh.public = 0.0; }
@@ -345,22 +354,25 @@ impl Energy {
             .set_year_values(year, &nrg_mix_price__m__eur_per_W_h);
 
         // Excel row 347: (sol_rf_costs + green_direct_costs + grid_mix_costs) / (sol_rf_self_cnsmp + green_direct + grid_mix)
-        let total_nrg_costs__M__eur_per_a = SectorsRawValues {
-            private: prchsd_renewable_nrg__M__eur_per_a.private + prchsd_nrg_mix_costs__M__eur_per_a.private + sol_rf_costs__M__eur_per_a.private,
-            industry: prchsd_renewable_nrg__M__eur_per_a.industry + prchsd_nrg_mix_costs__M__eur_per_a.industry + sol_rf_costs__M__eur_per_a.industry,
-            schools: prchsd_renewable_nrg__M__eur_per_a.schools + prchsd_nrg_mix_costs__M__eur_per_a.schools + sol_rf_costs__M__eur_per_a.schools,
-            public: prchsd_renewable_nrg__M__eur_per_a.public + prchsd_nrg_mix_costs__M__eur_per_a.public + sol_rf_costs__M__eur_per_a.public,
-        };
+        crate::equation! {
+            /// Total electricity procurement and generation costs across sectors
+            let total_nrg_costs__M__eur_per_a = prchsd_renewable_nrg__M__eur_per_a
+                + prchsd_nrg_mix_costs__M__eur_per_a
+                + sol_rf_costs__M__eur_per_a;
+        }
 
-        let total_nrg_volume__G__W_h_per_a = SectorsRawValues {
-            private: sol_rf_self_cnsmp__G__W_h_per_a.private + prchsd_renewable_nrg__G__W_h_per_a.private + prchsd_nrg_mix__G__W_h_per_a.private,
-            industry: sol_rf_self_cnsmp__G__W_h_per_a.industry + prchsd_renewable_nrg__G__W_h_per_a.industry + prchsd_nrg_mix__G__W_h_per_a.industry,
-            schools: sol_rf_self_cnsmp__G__W_h_per_a.schools + prchsd_renewable_nrg__G__W_h_per_a.schools + prchsd_nrg_mix__G__W_h_per_a.schools,
-            public: sol_rf_self_cnsmp__G__W_h_per_a.public + prchsd_renewable_nrg__G__W_h_per_a.public + prchsd_nrg_mix__G__W_h_per_a.public,
-        };
+        crate::equation! {
+            /// Total electricity procurement and generation volume across sectors
+            let total_nrg_volume__G__W_h_per_a = sol_rf_self_cnsmp__G__W_h_per_a
+                + prchsd_renewable_nrg__G__W_h_per_a
+                + prchsd_nrg_mix__G__W_h_per_a;
+        }
 
-        let mut nrg_own_mix_price__m__eur_per_W_h =
-            &total_nrg_costs__M__eur_per_a / &total_nrg_volume__G__W_h_per_a;
+        crate::equation! {
+            /// Effective municipal electricity tariff based on weighted power mix costs
+            let mut nrg_own_mix_price__m__eur_per_W_h =
+                &total_nrg_costs__M__eur_per_a / &total_nrg_volume__G__W_h_per_a;
+        }
         if total_nrg_volume__G__W_h_per_a.private == 0.0 {
             nrg_own_mix_price__m__eur_per_W_h.private = 0.04062335;
         }

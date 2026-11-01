@@ -162,12 +162,12 @@ impl Buildings {
         let c_gas = results.cnsmp_gas__G__W_h_per_a.get_year(year);
         let c_hp = results.cnsmp_elec_heat_pump__G__W_h_per_a.get_year(year);
         let c_other = results.cnsmp_other__G__W_h_per_a.get_year(year);
-        let cnsmp_total_heat__G__W_h_per_a = SectorsRawValues {
-            private: c_oil_cond.private + c_gas.private + c_hp.private + c_other.private,
-            industry: c_oil_cond.industry + c_gas.industry + c_hp.industry + c_other.industry,
-            schools: c_oil_cond.schools + c_gas.schools + c_hp.schools + c_other.schools,
-            public: c_oil_cond.sum() + c_gas.public + c_hp.sum() + c_other.public,
-        };
+        crate::equation! {
+            /// Total municipal heat consumption across all heating technologies
+            let mut cnsmp_total_heat__G__W_h_per_a = c_oil_cond + c_gas + c_hp + c_other;
+        }
+        cnsmp_total_heat__G__W_h_per_a.public =
+            c_oil_cond.sum() + c_gas.public + c_hp.sum() + c_other.public;
         results
             .cnsmp_total_heat__G__W_h_per_a
             .set_year_values(year, &cnsmp_total_heat__G__W_h_per_a);
@@ -361,9 +361,12 @@ impl Buildings {
         let nrg_own_mix_price__m__eur_per_W_h =
             nrg_own_mix_price__m__eur_per_W_h.get_year(year);
 
-        let mut costs_heat_pump__M__eur = &cnsmp_elec_heat_pump__G__W_h_per_a
-            * &nrg_own_mix_price__m__eur_per_W_h
-            * (1.0 - evu_discount_heat_pump);
+        crate::equation! {
+            /// Total electricity expenditures for heat pumps
+            let mut costs_heat_pump__M__eur = &cnsmp_elec_heat_pump__G__W_h_per_a
+                * &nrg_own_mix_price__m__eur_per_W_h
+                * (1.0 - evu_discount_heat_pump);
+        }
         // Excel row 125: Cell D125 has formula =D98*D$347*(1-D$348) referencing the total sum D98
         costs_heat_pump__M__eur.public = cnsmp_elec_heat_pump__G__W_h_per_a.sum()
             * nrg_own_mix_price__m__eur_per_W_h.public
@@ -394,8 +397,11 @@ impl Buildings {
         let cnsmp_gas__G__W_h_per_a = results.cnsmp_gas__G__W_h_per_a.get_year(year);
 
         // Excel row 352: D79 * 3.0
-        let mut ems_oil__k__to_coe_per_a =
-            cnsmp_oil__M__L_per_a * constants::EnergySource::oil::emission__kg_coe_per_L;
+        crate::equation! {
+            /// Greenhouse gas emissions from heating oil consumption
+            let mut ems_oil__k__to_coe_per_a =
+                cnsmp_oil__M__L_per_a * constants::EnergySource::oil::emission__kg_coe_per_L;
+        }
         // In Excel row 354, cell D354 has formula =D81*'Eingabe Ist'!$M$16 (schools only)
         ems_oil__k__to_coe_per_a.public = ems_oil__k__to_coe_per_a.schools;
         ems_oil__k__to_coe_per_a.schools = 0.0;
@@ -405,8 +411,11 @@ impl Buildings {
             .set_year_values(year, &ems_oil__k__to_coe_per_a);
 
         // Excel row 356: D84 * 2.0 (GWh * 2.0)
-        let mut ems_gas__k__to_coe_per_a =
-            cnsmp_gas__G__W_h_per_a * constants::EnergySource::gas::emission__kg_coe_per_m3;
+        crate::equation! {
+            /// Greenhouse gas emissions from natural gas consumption
+            let mut ems_gas__k__to_coe_per_a =
+                cnsmp_gas__G__W_h_per_a * constants::EnergySource::gas::emission__kg_coe_per_m3;
+        }
         // In Excel row 358, cell D358 has formula =D86*'Eingabe Ist'!$M$16 (schools only)
         ems_gas__k__to_coe_per_a.public = ems_gas__k__to_coe_per_a.schools;
         ems_gas__k__to_coe_per_a.schools = 0.0;

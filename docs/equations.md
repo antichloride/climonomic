@@ -419,6 +419,35 @@ cnsmp_gas_district_heating__M__m3_per_a = (1.0 - &district_heating_renewable_par
 
 ---
 
+### `cnsmp_total_heat__G__W_h_per_a`
+
+> **Description:** Total municipal heat consumption across all heating technologies
+
+**Source:** Declarative Macro (`src/equations.rs` &rarr; Wasm API)
+
+$$
+\mathrm{cnsmp\_total\_heat} = \mathrm{c\_oil\_cond} + \mathrm{c\_gas} + \mathrm{c\_hp} + \mathrm{c\_other}
+$$
+
+**Formula Expression:**
+```rust
+cnsmp_total_heat__G__W_h_per_a = c_oil_cond + c_gas + c_hp + c_other;
+```
+
+**Verification Status:** ⚠️ **Discrepancy Note**: Dimensional mismatch: LHS {'power': 1, 'time_h': 1, 'time_a': -1} vs RHS {}
+
+#### Variable & Unit Breakdown
+
+| Variable / Argument | Role | Encoded Unit | LaTeX Unit | Physical Dimension |
+| :--- | :--- | :--- | :--- | :--- |
+| `cnsmp_total_heat__G__W_h_per_a` | **LHS (Result)** | `G__W_h_per_a` | $\text{GWh}/\text{a}$ | Power, 1 / Time (annual), Time (hours) |
+| `c_other` | Parameter / Constant | `none` | $\text{dimensionless}$ | Dimensionless / Count |
+| `c_hp` | Parameter / Constant | `none` | $\text{dimensionless}$ | Dimensionless / Count |
+| `c_oil_cond` | Parameter / Constant | `none` | $\text{dimensionless}$ | Dimensionless / Count |
+| `c_gas` | Parameter / Constant | `none` | $\text{dimensionless}$ | Dimensionless / Count |
+
+---
+
 ### `costs_oil__M__eur_per_a`
 
 > **Description:** Total annual expenditures on heating oil
@@ -675,6 +704,34 @@ grant_total__M__eur_per_a = &grant_heat_sources__M__eur_per_a + &grant_energetic
 
 ---
 
+### `costs_heat_pump__M__eur`
+
+> **Description:** Total electricity expenditures for heat pumps
+
+**Source:** Declarative Macro (`src/equations.rs` &rarr; Wasm API)
+
+$$
+\mathrm{costs\_heat\_pump} = \mathrm{cnsmp\_elec\_heat\_pump} \cdot \mathrm{nrg\_own\_mix\_price} \cdot \left(1 - \mathrm{evu\_discount\_heat\_pump}\right)
+$$
+
+**Formula Expression:**
+```rust
+costs_heat_pump__M__eur = &cnsmp_elec_heat_pump__G__W_h_per_a * &nrg_own_mix_price__m__eur_per_W_h * (1.0 - evu_discount_heat_pump);
+```
+
+**Verification Status:** ✅ **Verified Physical Balance**
+
+#### Variable & Unit Breakdown
+
+| Variable / Argument | Role | Encoded Unit | LaTeX Unit | Physical Dimension |
+| :--- | :--- | :--- | :--- | :--- |
+| `costs_heat_pump__M__eur` | **LHS (Result)** | `M__eur` | $\text{M€}$ | Financial Currency (€) |
+| `cnsmp_elec_heat_pump__G__W_h_per_a` | Input / Variable | `G__W_h_per_a` | $\text{GWh}/\text{a}$ | Power, 1 / Time (annual), Time (hours) |
+| `nrg_own_mix_price__m__eur_per_W_h` | Input / Variable | `m__eur_per_W_h` | $\text{m€}/\text{Wh}$ | Financial Currency (€), 1 / Power, 1 / Time (hours) |
+| `evu_discount_heat_pump` | Parameter / Constant | `none` | $\text{dimensionless}$ | Dimensionless / Count |
+
+---
+
 ### `costs_total__M__eur`
 
 > **Description:** Total building energy and heating expenditures
@@ -702,6 +759,60 @@ costs_total__M__eur = costs_oil__M__eur_per_a + costs_gas__M__eur_per_a + costs_
 | `costs_client_district_heating__M__eur_per_a` | Input / Variable | `M__eur_per_a` | $\text{M€}/\text{a}$ | Financial Currency (€), 1 / Time (annual) |
 | `costs_oil__M__eur_per_a` | Input / Variable | `M__eur_per_a` | $\text{M€}/\text{a}$ | Financial Currency (€), 1 / Time (annual) |
 | `costs_gas__M__eur_per_a` | Input / Variable | `M__eur_per_a` | $\text{M€}/\text{a}$ | Financial Currency (€), 1 / Time (annual) |
+
+---
+
+### `ems_oil__k__to_coe_per_a`
+
+> **Description:** Greenhouse gas emissions from heating oil consumption
+
+**Source:** Declarative Macro (`src/equations.rs` &rarr; Wasm API)
+
+$$
+\mathrm{ems\_oil} = \mathrm{cnsmp\_oil} \cdot \mathrm{emission}
+$$
+
+**Formula Expression:**
+```rust
+ems_oil__k__to_coe_per_a = cnsmp_oil__M__L_per_a * constants::EnergySource::oil::emission__kg_coe_per_L;
+```
+
+**Verification Status:** ✅ **Verified Physical Balance**
+
+#### Variable & Unit Breakdown
+
+| Variable / Argument | Role | Encoded Unit | LaTeX Unit | Physical Dimension |
+| :--- | :--- | :--- | :--- | :--- |
+| `ems_oil__k__to_coe_per_a` | **LHS (Result)** | `k__to_coe_per_a` | $\text{kt }\text{CO}_2\text{e}/\text{a}$ | Greenhouse Gas Emissions (CO₂e), Mass, 1 / Time (annual) |
+| `cnsmp_oil__M__L_per_a` | Input / Variable | `M__L_per_a` | $\text{Mio. L}/\text{a}$ | 1 / Time (annual), Volume |
+| `emission__kg_coe_per_L` | Input / Variable | `kg_coe_per_L` | $\text{kg }\text{CO}_2\text{e}/\text{L}$ | Greenhouse Gas Emissions (CO₂e), Mass, 1 / Volume |
+
+---
+
+### `ems_gas__k__to_coe_per_a`
+
+> **Description:** Greenhouse gas emissions from natural gas consumption
+
+**Source:** Declarative Macro (`src/equations.rs` &rarr; Wasm API)
+
+$$
+\mathrm{ems\_gas} = \mathrm{cnsmp\_gas} \cdot \mathrm{emission}
+$$
+
+**Formula Expression:**
+```rust
+ems_gas__k__to_coe_per_a = cnsmp_gas__G__W_h_per_a * constants::EnergySource::gas::emission__kg_coe_per_m3;
+```
+
+**Verification Status:** ⚠️ **Discrepancy Note**: Dimensional mismatch: LHS {'mass': 1, 'co2_equivalent': 1, 'time_a': -1} vs RHS {'power': 1, 'time_h': 1, 'time_a': -1, 'mass': 1, 'co2_equivalent': 1, 'volume': -1}
+
+#### Variable & Unit Breakdown
+
+| Variable / Argument | Role | Encoded Unit | LaTeX Unit | Physical Dimension |
+| :--- | :--- | :--- | :--- | :--- |
+| `ems_gas__k__to_coe_per_a` | **LHS (Result)** | `k__to_coe_per_a` | $\text{kt }\text{CO}_2\text{e}/\text{a}$ | Greenhouse Gas Emissions (CO₂e), Mass, 1 / Time (annual) |
+| `cnsmp_gas__G__W_h_per_a` | Input / Variable | `G__W_h_per_a` | $\text{GWh}/\text{a}$ | Power, 1 / Time (annual), Time (hours) |
+| `emission__kg_coe_per_m3` | Input / Variable | `kg_coe_per_m3` | $\text{kg }\text{CO}_2\text{e}/\text{m}^3$ | Greenhouse Gas Emissions (CO₂e), Mass, 1 / Volume |
 
 ---
 
@@ -1370,6 +1481,63 @@ prchsd_renewable_nrg__M__eur_per_a = &prchsd_renewable_nrg__G__W_h_per_a * &rene
 
 ---
 
+### `elec_nrg_dmd__G__W_h_per_a`
+
+> **Description:** Total electricity demand across buildings, heat pumps, and electric vehicles
+
+**Source:** Declarative Macro (`src/equations.rs` &rarr; Wasm API)
+
+$$
+\mathrm{elec\_nrg\_dmd} = \mathrm{electric\_power\_demand\_buildings} + \mathrm{energy\_heating\_heat\_pump} + \mathrm{bev\_electric\_power\_demand}
+$$
+
+**Formula Expression:**
+```rust
+elec_nrg_dmd__G__W_h_per_a = electric_power_demand_buildings + energy_heating_heat_pump + bev_electric_power_demand;
+```
+
+**Verification Status:** ⚠️ **Discrepancy Note**: Dimensional mismatch: LHS {'power': 1, 'time_h': 1, 'time_a': -1} vs RHS {}
+
+#### Variable & Unit Breakdown
+
+| Variable / Argument | Role | Encoded Unit | LaTeX Unit | Physical Dimension |
+| :--- | :--- | :--- | :--- | :--- |
+| `elec_nrg_dmd__G__W_h_per_a` | **LHS (Result)** | `G__W_h_per_a` | $\text{GWh}/\text{a}$ | Power, 1 / Time (annual), Time (hours) |
+| `bev_electric_power_demand` | Parameter / Constant | `none` | $\text{dimensionless}$ | Dimensionless / Count |
+| `electric_power_demand_buildings` | Parameter / Constant | `none` | $\text{dimensionless}$ | Dimensionless / Count |
+| `energy_heating_heat_pump` | Parameter / Constant | `none` | $\text{dimensionless}$ | Dimensionless / Count |
+
+---
+
+### `prchsd_nrg_mix__G__W_h_per_a`
+
+> **Description:** Grid electricity demand remaining after self-consumption and direct green power
+
+**Source:** Declarative Macro (`src/equations.rs` &rarr; Wasm API)
+
+$$
+\mathrm{prchsd\_nrg\_mix} = \mathrm{elec\_nrg\_dmd} - \mathrm{sol\_rf\_self\_cnsmp} - \mathrm{sol\_os\_self\_cnsmp} - \mathrm{prchsd\_renewable\_nrg}
+$$
+
+**Formula Expression:**
+```rust
+prchsd_nrg_mix__G__W_h_per_a = elec_nrg_dmd__G__W_h_per_a - sol_rf_self_cnsmp__G__W_h_per_a - sol_os_self_cnsmp__G__W_h_per_a - prchsd_renewable_nrg__G__W_h_per_a;
+```
+
+**Verification Status:** ✅ **Verified Physical Balance**
+
+#### Variable & Unit Breakdown
+
+| Variable / Argument | Role | Encoded Unit | LaTeX Unit | Physical Dimension |
+| :--- | :--- | :--- | :--- | :--- |
+| `prchsd_nrg_mix__G__W_h_per_a` | **LHS (Result)** | `G__W_h_per_a` | $\text{GWh}/\text{a}$ | Power, 1 / Time (annual), Time (hours) |
+| `prchsd_renewable_nrg__G__W_h_per_a` | Input / Variable | `G__W_h_per_a` | $\text{GWh}/\text{a}$ | Power, 1 / Time (annual), Time (hours) |
+| `sol_os_self_cnsmp__G__W_h_per_a` | Input / Variable | `G__W_h_per_a` | $\text{GWh}/\text{a}$ | Power, 1 / Time (annual), Time (hours) |
+| `elec_nrg_dmd__G__W_h_per_a` | Input / Variable | `G__W_h_per_a` | $\text{GWh}/\text{a}$ | Power, 1 / Time (annual), Time (hours) |
+| `sol_rf_self_cnsmp__G__W_h_per_a` | Input / Variable | `G__W_h_per_a` | $\text{GWh}/\text{a}$ | Power, 1 / Time (annual), Time (hours) |
+
+---
+
 ### `prchsd_nrg_mix_costs__M__eur_per_a`
 
 > **Description:** Total cost of purchased electricity mix
@@ -1422,6 +1590,116 @@ sol_rf_costs__M__eur_per_a = &sol_rf_self_cnsmp__G__W_h_per_a * constants::solar
 | `sol_rf_revenue__M__eur_per_a` | Input / Variable | `M__eur_per_a` | $\text{M€}/\text{a}$ | Financial Currency (€), 1 / Time (annual) |
 | `sol_rf_self_cnsmp__G__W_h_per_a` | Input / Variable | `G__W_h_per_a` | $\text{GWh}/\text{a}$ | Power, 1 / Time (annual), Time (hours) |
 | `solar_roof` | Parameter / Constant | `none` | $\text{dimensionless}$ | Dimensionless / Count |
+
+---
+
+### `sol_rf_costs__eur_per_kWh`
+
+> **Description:** Rooftop solar electricity generation cost per kWh
+
+**Source:** Declarative Macro (`src/equations.rs` &rarr; Wasm API)
+
+$$
+\mathrm{sol\_rf\_costs} = \frac{\mathrm{sol\_rf\_costs}}{\mathrm{sol\_rf\_self\_cnsmp}}
+$$
+
+**Formula Expression:**
+```rust
+sol_rf_costs__eur_per_kWh = &sol_rf_costs__M__eur_per_a / &sol_rf_self_cnsmp__G__W_h_per_a;
+```
+
+**Verification Status:** ✅ **Verified Physical Balance**
+
+#### Variable & Unit Breakdown
+
+| Variable / Argument | Role | Encoded Unit | LaTeX Unit | Physical Dimension |
+| :--- | :--- | :--- | :--- | :--- |
+| `sol_rf_costs__eur_per_kWh` | **LHS (Result)** | `eur_per_kWh` | $\text{€}/\text{kWh}$ | Financial Currency (€), 1 / Power, 1 / Time (hours) |
+| `sol_rf_costs__M__eur_per_a` | Input / Variable | `M__eur_per_a` | $\text{M€}/\text{a}$ | Financial Currency (€), 1 / Time (annual) |
+| `sol_rf_self_cnsmp__G__W_h_per_a` | Input / Variable | `G__W_h_per_a` | $\text{GWh}/\text{a}$ | Power, 1 / Time (annual), Time (hours) |
+
+---
+
+### `total_nrg_costs__M__eur_per_a`
+
+> **Description:** Total electricity procurement and generation costs across sectors
+
+**Source:** Declarative Macro (`src/equations.rs` &rarr; Wasm API)
+
+$$
+\mathrm{total\_nrg\_costs} = \mathrm{prchsd\_renewable\_nrg} + \mathrm{prchsd\_nrg\_mix\_costs} + \mathrm{sol\_rf\_costs}
+$$
+
+**Formula Expression:**
+```rust
+total_nrg_costs__M__eur_per_a = prchsd_renewable_nrg__M__eur_per_a + prchsd_nrg_mix_costs__M__eur_per_a + sol_rf_costs__M__eur_per_a;
+```
+
+**Verification Status:** ✅ **Verified Physical Balance**
+
+#### Variable & Unit Breakdown
+
+| Variable / Argument | Role | Encoded Unit | LaTeX Unit | Physical Dimension |
+| :--- | :--- | :--- | :--- | :--- |
+| `total_nrg_costs__M__eur_per_a` | **LHS (Result)** | `M__eur_per_a` | $\text{M€}/\text{a}$ | Financial Currency (€), 1 / Time (annual) |
+| `sol_rf_costs__M__eur_per_a` | Input / Variable | `M__eur_per_a` | $\text{M€}/\text{a}$ | Financial Currency (€), 1 / Time (annual) |
+| `prchsd_renewable_nrg__M__eur_per_a` | Input / Variable | `M__eur_per_a` | $\text{M€}/\text{a}$ | Financial Currency (€), 1 / Time (annual) |
+| `prchsd_nrg_mix_costs__M__eur_per_a` | Input / Variable | `M__eur_per_a` | $\text{M€}/\text{a}$ | Financial Currency (€), 1 / Time (annual) |
+
+---
+
+### `total_nrg_volume__G__W_h_per_a`
+
+> **Description:** Total electricity procurement and generation volume across sectors
+
+**Source:** Declarative Macro (`src/equations.rs` &rarr; Wasm API)
+
+$$
+\mathrm{total\_nrg\_volume} = \mathrm{sol\_rf\_self\_cnsmp} + \mathrm{prchsd\_renewable\_nrg} + \mathrm{prchsd\_nrg\_mix}
+$$
+
+**Formula Expression:**
+```rust
+total_nrg_volume__G__W_h_per_a = sol_rf_self_cnsmp__G__W_h_per_a + prchsd_renewable_nrg__G__W_h_per_a + prchsd_nrg_mix__G__W_h_per_a;
+```
+
+**Verification Status:** ✅ **Verified Physical Balance**
+
+#### Variable & Unit Breakdown
+
+| Variable / Argument | Role | Encoded Unit | LaTeX Unit | Physical Dimension |
+| :--- | :--- | :--- | :--- | :--- |
+| `total_nrg_volume__G__W_h_per_a` | **LHS (Result)** | `G__W_h_per_a` | $\text{GWh}/\text{a}$ | Power, 1 / Time (annual), Time (hours) |
+| `prchsd_nrg_mix__G__W_h_per_a` | Input / Variable | `G__W_h_per_a` | $\text{GWh}/\text{a}$ | Power, 1 / Time (annual), Time (hours) |
+| `sol_rf_self_cnsmp__G__W_h_per_a` | Input / Variable | `G__W_h_per_a` | $\text{GWh}/\text{a}$ | Power, 1 / Time (annual), Time (hours) |
+| `prchsd_renewable_nrg__G__W_h_per_a` | Input / Variable | `G__W_h_per_a` | $\text{GWh}/\text{a}$ | Power, 1 / Time (annual), Time (hours) |
+
+---
+
+### `nrg_own_mix_price__m__eur_per_W_h`
+
+> **Description:** Effective municipal electricity tariff based on weighted power mix costs
+
+**Source:** Declarative Macro (`src/equations.rs` &rarr; Wasm API)
+
+$$
+\mathrm{nrg\_own\_mix\_price} = \frac{\mathrm{total\_nrg\_costs}}{\mathrm{total\_nrg\_volume}}
+$$
+
+**Formula Expression:**
+```rust
+nrg_own_mix_price__m__eur_per_W_h = &total_nrg_costs__M__eur_per_a / &total_nrg_volume__G__W_h_per_a;
+```
+
+**Verification Status:** ✅ **Verified Physical Balance**
+
+#### Variable & Unit Breakdown
+
+| Variable / Argument | Role | Encoded Unit | LaTeX Unit | Physical Dimension |
+| :--- | :--- | :--- | :--- | :--- |
+| `nrg_own_mix_price__m__eur_per_W_h` | **LHS (Result)** | `m__eur_per_W_h` | $\text{m€}/\text{Wh}$ | Financial Currency (€), 1 / Power, 1 / Time (hours) |
+| `total_nrg_costs__M__eur_per_a` | Input / Variable | `M__eur_per_a` | $\text{M€}/\text{a}$ | Financial Currency (€), 1 / Time (annual) |
+| `total_nrg_volume__G__W_h_per_a` | Input / Variable | `G__W_h_per_a` | $\text{GWh}/\text{a}$ | Power, 1 / Time (annual), Time (hours) |
 
 ---
 
@@ -3256,6 +3534,6 @@ federal_cash_flow_netto__M__eur_per_a = federal_additional_expenses__M__eur_per_
 
 ## Summary Statistics
 
-- **Total Equations Extracted:** 115
-- **Equations Verified (100% Dimensional & Scale Balance):** 87
-- **Verification Pass Rate:** 75.7%
+- **Total Equations Extracted:** 125
+- **Equations Verified (100% Dimensional & Scale Balance):** 94
+- **Verification Pass Rate:** 75.2%

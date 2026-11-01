@@ -15,7 +15,7 @@ mod result;
 use result::Results;
 use input::Input;
 mod sectors;
-use sectors::{SectorsResult, SectorsRawValues};
+use sectors::SectorsResult;
 mod constants;
 mod economy;
 use economy::Economy;
@@ -132,17 +132,16 @@ impl Calculator{
         let prchsd_nrg_mix_ems = self.energy.prchsd_nrg_mix_ems__k__to_coe_per_a().get_year(year);
         let cars_ems = self.mobility.cars_ems__k__to_coe_per_a().get_year(year);
 
-        let ems_total = SectorsRawValues {
-            private: ems_oil.private + ems_gas.private + prchsd_nrg_mix_ems.private + cars_ems.private,
-            industry: ems_oil.industry + ems_gas.industry + prchsd_nrg_mix_ems.industry + cars_ems.industry,
-            schools: ems_oil.schools + ems_gas.schools + prchsd_nrg_mix_ems.schools + cars_ems.schools,
-            public: ems_oil.public + ems_gas.public + prchsd_nrg_mix_ems.public + cars_ems.public,
-        };
-        self.ems_total__k__to_coe_per_a.set_year_values(year, &ems_total);
+        crate::equation! {
+            /// Total municipal greenhouse gas emissions across all sectors
+            self.ems_total__k__to_coe_per_a[year] = ems_oil + ems_gas + prchsd_nrg_mix_ems + cars_ems;
+        }
 
-        let feed_in_ems_avoided = self.energy.results.feed_in_ems_avoided__k__to_coe_per_a.get_year(year);
-        let net_co2_balance = ems_total.sum() - feed_in_ems_avoided;
-        self.net_co2_balance__k__to_coe_per_a.set_year_value(year, net_co2_balance);
+        let feed_in_ems_avoided__k__to_coe_per_a = self.energy.results.feed_in_ems_avoided__k__to_coe_per_a.get_year(year);
+        crate::equation! {
+            /// Net municipal CO2 balance accounting for avoided emissions from renewable feed-in
+            self.net_co2_balance__k__to_coe_per_a[year] = ems_total__k__to_coe_per_a.sum() - feed_in_ems_avoided__k__to_coe_per_a;
+        }
     }
 
     fn get_inputs(&self) -> Vec<&Input> {
