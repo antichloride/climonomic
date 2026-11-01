@@ -134,6 +134,65 @@
   font-family: var(--k-font-numeric);
 }
 
+/* Measure Card Sliders */
+.measure-slider-box {
+  background: var(--k-color-section-base);
+  border: 1px solid var(--k-color-section-border);
+  border-radius: var(--k-radius-md);
+  padding: 8px 12px;
+  margin: 10px 0 12px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: all var(--k-transition-fast);
+}
+
+.measure-slider-box.disabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+[data-theme="dark"] .measure-slider-box {
+  background: #0E1524;
+  border-color: #243048;
+}
+
+.measure-slider-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.slider-bound-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--k-color-text-muted);
+}
+
+.slider-pct-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-family: var(--k-font-numeric);
+  color: var(--k-color-primary-base);
+  background: rgba(79, 70, 229, 0.1);
+  padding: 2px 8px;
+  border-radius: var(--k-radius-pill);
+}
+
+[data-theme="dark"] .slider-pct-badge {
+  background: rgba(99, 102, 241, 0.2);
+  color: #A5B4FC;
+}
+
+.measure-slider {
+  height: 6px;
+}
+
+.measure-slider::-webkit-slider-thumb {
+  width: 16px;
+  height: 16px;
+}
+
 /* Advanced Divider */
 .advanced-divider {
   display: flex;
