@@ -9,7 +9,8 @@
     "build:wasm:web": "PATH=\"$HOME/.cargo/bin:$PATH\" wasm-pack build --target web --out-dir pkg-web",
     "dev": "npm --prefix frontend run dev",
     "test": "vitest run",
-    "verify:units": "python3 scripts/verify_units.py"
+    "verify:units": "python3 scripts/verify_units.py",
+    "docs:equations": "python3 scripts/export_equations_md.py"
   },
   "devDependencies": {
     "typescript": "^5.7.0",
