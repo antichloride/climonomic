@@ -134,10 +134,10 @@ impl Stakeholders {
         // Row 428: Invest Kommune = (D155-D176) + (D265-D269) + (D298-D301)
         crate::equation! {
             /// Municipal capital expenditure for public buildings and infrastructure
-            results.community_invest__M__eur_per_a[year] = (buildings.invest_heat_sources__M__eur_per_a().get_year(year).schools
-                + buildings.invest_energetic_renovation__M__eur_per_a().get_year(year).schools)
-                - (buildings.grant_heat_sources__M__eur_per_a().get_year(year).schools
-                    + buildings.grant_energetic_renovation__M__eur_per_a().get_year(year).schools)
+            results.community_invest__M__eur_per_a[year] = (buildings.invest_heat_sources__M__eur_per_a().get_year(year).public
+                + buildings.invest_energetic_renovation__M__eur_per_a().get_year(year).public)
+                - (buildings.grant_heat_sources__M__eur_per_a().get_year(year).public
+                    + buildings.grant_energetic_renovation__M__eur_per_a().get_year(year).public)
                 + (energy.sol_rf_invest__M__eur_per_a().get_year(year).public
                     - energy.sol_rf_grant__M__eur_per_a().get_year(year).public)
                 + (energy.sol_os_invest__M__eur_per_a().get_year(year).public
@@ -154,8 +154,8 @@ impl Stakeholders {
 
         crate::equation! {
             /// Operational financial effects and savings for the municipality
-            results.community_effect_of_measures__M__eur_per_a[year] = (buildings.results.costs_total__M__eur.get_year(prev).schools
-                - buildings.results.costs_total__M__eur.get_year(year).schools)
+            results.community_effect_of_measures__M__eur_per_a[year] = (buildings.results.costs_total__M__eur.get_year(prev).public
+                - buildings.results.costs_total__M__eur.get_year(year).public)
                 + (mobility.results.bev_nrg_costs__M__eur_per_a.get_year(prev).public
                     - mobility.results.bev_nrg_costs__M__eur_per_a.get_year(year).public)
                 + (mobility.results.cars_fuel_costs__M__eur_per_a.get_year(prev).public

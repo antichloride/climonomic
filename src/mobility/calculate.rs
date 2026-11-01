@@ -27,7 +27,6 @@ impl Mobility {
         if car_mileage.public == 0.0 {
             car_mileage.public = 10.0;
         }
-        car_mileage.schools = 0.0;
 
         crate::equation! {
             /// Total annual distance traveled by car across vehicle fleet

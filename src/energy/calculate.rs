@@ -278,12 +278,9 @@ impl Energy {
         // Excel row 235-238: Buildings + Heat pump + BEV
         crate::equation! {
             /// Total electricity demand across buildings, heat pumps, and electric vehicles
-            let mut elec_nrg_dmd__G__W_h_per_a =
+            let elec_nrg_dmd__G__W_h_per_a =
                 electric_power_demand_buildings + energy_heating_heat_pump + bev_electric_power_demand;
         }
-        // Public sector includes schools (Excel row 237)
-        elec_nrg_dmd__G__W_h_per_a.public += elec_nrg_dmd__G__W_h_per_a.schools;
-        elec_nrg_dmd__G__W_h_per_a.schools = 0.0;
         results
             .elec_nrg_dmd__G__W_h_per_a
             .set_year_values(year, &elec_nrg_dmd__G__W_h_per_a);
@@ -305,7 +302,6 @@ impl Energy {
         }
         if prchsd_nrg_mix__G__W_h_per_a.private < 0.0 { prchsd_nrg_mix__G__W_h_per_a.private = 0.0; }
         if prchsd_nrg_mix__G__W_h_per_a.industry < 0.0 { prchsd_nrg_mix__G__W_h_per_a.industry = 0.0; }
-        if prchsd_nrg_mix__G__W_h_per_a.schools < 0.0 { prchsd_nrg_mix__G__W_h_per_a.schools = 0.0; }
         if prchsd_nrg_mix__G__W_h_per_a.public < 0.0 { prchsd_nrg_mix__G__W_h_per_a.public = 0.0; }
 
         results
@@ -344,7 +340,6 @@ impl Energy {
         if sol_rf_self_cnsmp__G__W_h_per_a.private == 0.0 { sol_rf_costs__eur_per_kWh.private = 0.0; }
         if sol_rf_self_cnsmp__G__W_h_per_a.industry == 0.0 { sol_rf_costs__eur_per_kWh.industry = 0.0; }
         if sol_rf_self_cnsmp__G__W_h_per_a.public == 0.0 { sol_rf_costs__eur_per_kWh.public = 0.0; }
-        if sol_rf_self_cnsmp__G__W_h_per_a.schools == 0.0 { sol_rf_costs__eur_per_kWh.schools = 0.0; }
         results
             .sol_rf_costs__eur_per_kWh
             .set_year_values(year, &sol_rf_costs__eur_per_kWh);
@@ -382,8 +377,6 @@ impl Energy {
         if total_nrg_volume__G__W_h_per_a.public == 0.0 {
             nrg_own_mix_price__m__eur_per_W_h.public = 0.04062335;
         }
-        nrg_own_mix_price__m__eur_per_W_h.schools =
-            nrg_own_mix_price__m__eur_per_W_h.public;
 
         results
             .nrg_own_mix_price__m__eur_per_W_h

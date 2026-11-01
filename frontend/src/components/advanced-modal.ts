@@ -27,7 +27,6 @@ export function openAdvancedModal() {
   const sectors: Array<{ key: SectorKey; label: string; sub: string }> = [
     { key: 'private', label: 'Privat', sub: 'Wohnen' },
     { key: 'industry', label: 'GHD', sub: 'Gewerbe & Industrie' },
-    { key: 'schools', label: 'Schulen', sub: 'Bildungseinrichtungen' },
     { key: 'public', label: 'Kommune', sub: 'Verwaltung & Öffentlich' },
   ];
 
@@ -39,8 +38,8 @@ export function openAdvancedModal() {
             <h2 style="font-size: 1.4rem; font-weight: 700; color: var(--k-color-text-title);">
               Manuelle Dateneingabe (Expertenmodus)
             </h2>
-            <span class="header-badge" style="background: var(--k-color-secondary-surface); color: var(--k-color-secondary-base); border-color: var(--k-color-secondary-base);">
-              v5 MODEL ENGINE
+            <span class="header-badge" style="background: var(--k-color-primary-surface); color: var(--k-color-primary-base); border-color: var(--k-color-primary-base);">
+              SIMULATION ENGINE
             </span>
             ${
               overrideCount > 0
@@ -49,7 +48,7 @@ export function openAdvancedModal() {
             }
           </div>
           <p style="font-size: var(--k-font-size-sm); color: var(--k-color-text-muted); margin-top: 4px;">
-            Kommunale Katasterdaten, Zensuswerte und Realdaten der Stadtwerke zur Feinabstimmung aller 116 Eingangsvariablen.
+            Kommunale Katasterdaten, Zensuswerte und Realdaten der Stadtwerke zur Feinabstimmung der 3 Sektoren (Privat, GHD, Kommune).
           </p>
         </div>
         <button class="modal-close" id="btn-close-advanced" title="Schließen" aria-label="Schließen">✕</button>

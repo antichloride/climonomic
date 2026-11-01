@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { Calculator } from '../pkg/climcalc_core.js';
-import { V5_INPUT_DEFINITIONS } from '../frontend/src/v5-schema';
+import { V5_INPUT_DEFINITIONS } from '../frontend/src/schema';
 import { createDefaultState, getBaselineValueForId } from '../frontend/src/baseline-data';
 
 interface MeasureIntervention {
@@ -33,7 +33,6 @@ const MEASURE_DEFINITIONS: Record<string, {
       if (dPriv > 0) list.push({ id: 'm_hd_priv', inputId: 'buildings/inputs/heat_dmd__k__W_h_per_m2_a/private', startYear, endYear, delta: dPriv });
       if (dGhd > 0) list.push({ id: 'm_hd_ghd', inputId: 'buildings/inputs/heat_dmd__k__W_h_per_m2_a/industry', startYear, endYear, delta: dGhd });
       if (dKom > 0) {
-        list.push({ id: 'm_hd_sch', inputId: 'buildings/inputs/heat_dmd__k__W_h_per_m2_a/schools', startYear, endYear, delta: dKom });
         list.push({ id: 'm_hd_pub', inputId: 'buildings/inputs/heat_dmd__k__W_h_per_m2_a/public', startYear, endYear, delta: dKom });
       }
       return list;

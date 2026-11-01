@@ -14,7 +14,7 @@ export function renderStakeholderBar(): string {
       </div>
       <div class="equation-op">+</div>
       <div class="equation-item ${currentFilter === 'kommune' ? 'active' : ''}" data-filter="kommune">
-        🏛️ Kommune & Schulen
+        🏛️ Kommune (Öffentlich)
       </div>
       <div class="equation-op">=</div>
       <div class="equation-item ${currentFilter === 'all' ? 'active' : ''}" data-filter="all">

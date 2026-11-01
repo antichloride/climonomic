@@ -4,7 +4,8 @@
   "description": "Climate and economic transition simulation engine for cities and municipalities",
   "type": "module",
   "scripts": {
-    "extract": "python3 scripts/extraction_v5.py \"examples/data/Rechnung Parameter v5.xlsx\" tests/fixtures/v5_rechnung.json",
+    "extract": "python3 scripts/extraction_webfassung.py \"examples/data/Klimarechner 260630 für Webfassung.xlsx\" tests/fixtures/webfassung_260630.json",
+    "zero:schools": "python3 scripts/zero_schools.py",
     "build:wasm": "PATH=\"$HOME/.cargo/bin:$PATH\" wasm-pack build --target nodejs --out-dir pkg",
     "build:wasm:web": "PATH=\"$HOME/.cargo/bin:$PATH\" wasm-pack build --target web --out-dir pkg-web",
     "dev": "npm --prefix frontend run dev",

@@ -55,11 +55,14 @@ export function renderCityDataCard(): string {
       </div>
 
       <!-- Advanced Pill Divider -->
-      <div class="advanced-divider">
+      <div class="advanced-divider" style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
         <button id="btn-open-advanced" class="btn-pill-divider" type="button">
           ${(Object.keys(s.expertOverrides || {}).length > 0)
             ? `⚙️ Manuelle Dateneingabe (<strong style="color: var(--k-color-secondary-base);">${Object.keys(s.expertOverrides || {}).length} angepasst</strong>)`
             : `⚙️ Manuelle Dateneingabe (Für Fortgeschrittene)`}
+        </button>
+        <button id="btn-open-import-export-card" class="btn-pill-divider" type="button" style="background: var(--k-color-primary-surface); color: var(--k-color-primary-base); border-color: var(--k-color-primary-base); font-weight: 600;">
+          ⇅ Excel-Format Import / Export
         </button>
       </div>
 
@@ -226,6 +229,11 @@ export function setupCityDataListeners() {
 
   document.getElementById('btn-open-advanced')?.addEventListener('click', () => {
     openAdvancedModal();
+  });
+
+  document.getElementById('btn-open-import-export-card')?.addEventListener('click', async () => {
+    const { openImportExportModal } = await import('./import-export-modal');
+    openImportExportModal('import');
   });
 
   document.getElementById('btn-open-sources')?.addEventListener('click', () => {

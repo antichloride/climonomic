@@ -399,13 +399,9 @@ impl Buildings {
         // Excel row 352: D79 * 3.0
         crate::equation! {
             /// Greenhouse gas emissions from heating oil consumption
-            let mut ems_oil__k__to_coe_per_a =
+            let ems_oil__k__to_coe_per_a =
                 cnsmp_oil__M__L_per_a * constants::EnergySource::oil::emission__kg_coe_per_L;
         }
-        // In Excel row 354, cell D354 has formula =D81*'Eingabe Ist'!$M$16 (schools only)
-        ems_oil__k__to_coe_per_a.public = ems_oil__k__to_coe_per_a.schools;
-        ems_oil__k__to_coe_per_a.schools = 0.0;
-
         results
             .ems_oil__k__to_coe_per_a
             .set_year_values(year, &ems_oil__k__to_coe_per_a);
@@ -413,12 +409,9 @@ impl Buildings {
         // Excel row 356: D84 * 2.0 (GWh * 2.0)
         crate::equation! {
             /// Greenhouse gas emissions from natural gas consumption
-            let mut ems_gas__k__to_coe_per_a =
+            let ems_gas__k__to_coe_per_a =
                 cnsmp_gas__G__W_h_per_a * constants::EnergySource::gas::emission__kg_coe_per_m3;
         }
-        // In Excel row 358, cell D358 has formula =D86*'Eingabe Ist'!$M$16 (schools only)
-        ems_gas__k__to_coe_per_a.public = ems_gas__k__to_coe_per_a.schools;
-        ems_gas__k__to_coe_per_a.schools = 0.0;
 
         results
             .ems_gas__k__to_coe_per_a

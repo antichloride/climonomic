@@ -15,6 +15,9 @@ export function renderHeader(): string {
         </p>
       </div>
       <div class="header-actions">
+        <button id="btn-open-import-export" class="btn-header-reset" style="background: var(--k-color-primary-surface); color: var(--k-color-primary-base); border: 1px solid var(--k-color-primary-base); font-weight: 600;" title="Einstellungen im Excel-Format importieren oder exportieren">
+          ⇅ Import / Export
+        </button>
         <button id="btn-theme-toggle" class="btn-theme-toggle" title="Design wechseln (Hell / Dunkel)" aria-label="Design wechseln">
           ${isDark ? '☀️' : '🌙'}
         </button>
@@ -36,6 +39,11 @@ export function initTheme() {
 }
 
 export function setupHeaderListeners() {
+  document.getElementById('btn-open-import-export')?.addEventListener('click', async () => {
+    const { openImportExportModal } = await import('./import-export-modal');
+    openImportExportModal('export');
+  });
+
   document.getElementById('btn-reset-all')?.addEventListener('click', () => {
     store.resetToDefaults();
     showToast('Alle Eingaben auf Standardwerte zurückgesetzt');

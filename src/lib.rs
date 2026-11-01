@@ -22,6 +22,7 @@ use economy::Economy;
 mod stakeholders;
 use stakeholders::Stakeholders;
 pub mod equations;
+pub mod model;
 
 
 
@@ -283,6 +284,9 @@ impl Calculator{
         end_year: u32,
         delta: f64,
     ) -> Result<(), JsError> {
+        if input_id.ends_with("/schools") {
+            return Ok(());
+        }
         match self.get_input_by_id(input_id) {
             Some(input) => {
                 input.add_measure(id, start_year, end_year, delta);
@@ -302,6 +306,9 @@ impl Calculator{
         end_year: u32,
         delta: f64,
     ) -> Result<(), JsError> {
+        if input_id.ends_with("/schools") {
+            return Ok(());
+        }
         match self.get_input_by_id(input_id) {
             Some(input) => {
                 input.update_measure(id, start_year, end_year, delta);
@@ -318,6 +325,9 @@ impl Calculator{
         id: &str,
         input_id: &str,
     ) -> Result<(), JsError> {
+        if input_id.ends_with("/schools") {
+            return Ok(());
+        }
         match self.get_input_by_id(input_id) {
             Some(input) => {
                 input.delete_measure(id);
@@ -390,6 +400,37 @@ impl Calculator{
             self.new_measure(&m.id, &m.input_id, m.start_year, m.end_year, m.delta)?;
         }
         Ok(())
+    }
+
+    /// Execute the municipal transition calculation pipeline.
+    /// Returns the comprehensive evaluation model results matching the Excel fixture.
+    pub fn calculate(&self, inputs: JsValue, measures: JsValue) -> Result<JsValue, JsError> {
+        let inputs_val: serde_json::Value = serde_wasm_bindgen::from_value(inputs)
+            .map_err(|e| JsError::new(&format!("Invalid inputs object: {e}")))?;
+        let measures_val: serde_json::Value = serde_wasm_bindgen::from_value(measures)
+            .map_err(|e| JsError::new(&format!("Invalid measures object: {e}")))?;
+        let outputs = model::run_calculation(&inputs_val, &measures_val);
+        to_value(&outputs).map_err(|e| JsError::new(&e.to_string()))
+    }
+
+    /// Execute the calculation pipeline using JSON strings.
+    pub fn calculate_json(&self, inputs_json: &str, measures_json: &str) -> Result<String, JsError> {
+        let inputs_val: serde_json::Value = serde_json::from_str(inputs_json)
+            .map_err(|e| JsError::new(&format!("Invalid inputs JSON: {e}")))?;
+        let measures_val: serde_json::Value = serde_json::from_str(measures_json)
+            .map_err(|e| JsError::new(&format!("Invalid measures JSON: {e}")))?;
+        let outputs = model::run_calculation(&inputs_val, &measures_val);
+        serde_json::to_string(&outputs).map_err(|e| JsError::new(&e.to_string()))
+    }
+
+    /// Backward-compatible alias for calculate
+    pub fn calculate_webfassung(&self, inputs: JsValue, measures: JsValue) -> Result<JsValue, JsError> {
+        self.calculate(inputs, measures)
+    }
+
+    /// Backward-compatible alias for calculate_json
+    pub fn calculate_webfassung_json(&self, inputs_json: &str, measures_json: &str) -> Result<String, JsError> {
+        self.calculate_json(inputs_json, measures_json)
     }
 }
 

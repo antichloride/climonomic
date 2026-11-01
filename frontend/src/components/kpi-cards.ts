@@ -32,7 +32,7 @@ export function renderKpiDashboard(): string {
           <option value="all" ${filter === 'all' ? 'selected' : ''}>alle Sektoren</option>
           <option value="private" ${filter === 'private' ? 'selected' : ''}>Private Haushalte</option>
           <option value="ghd" ${filter === 'ghd' ? 'selected' : ''}>GHD & Industrie</option>
-          <option value="kommune" ${filter === 'kommune' ? 'selected' : ''}>Kommune & Schulen</option>
+          <option value="kommune" ${filter === 'kommune' ? 'selected' : ''}>Kommune (Öffentlich)</option>
         </select>
       </div>
 

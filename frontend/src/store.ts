@@ -1,4 +1,4 @@
-import { CityBaseline, createDefaultState } from './baseline-data';
+import { CityBaseline, createDefaultState, exportStateInputs, importStateInputs } from './baseline-data';
 import { SimulationOutput, ensureWasmLoaded, runSimulation } from './wasm-engine';
 
 export type StakeholderFilter = 'all' | 'private' | 'ghd' | 'kommune';
@@ -63,6 +63,20 @@ class SimulationStore {
     updater(this.state);
     this.syncUrlHash();
     this.recalculate();
+  }
+
+  public exportInputsJson(pretty = true): string {
+    const inputs = exportStateInputs(this.state);
+    return JSON.stringify(inputs, null, pretty ? 2 : undefined);
+  }
+
+  public importInputsJson(rawJsonOrObj: any): { success: boolean; message: string; modifiedCount: number } {
+    const res = importStateInputs(this.state, rawJsonOrObj);
+    if (res.success) {
+      this.syncUrlHash();
+      this.recalculate();
+    }
+    return res;
   }
 
   public resetToDefaults() {

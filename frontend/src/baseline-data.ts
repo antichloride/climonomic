@@ -1,4 +1,6 @@
-export * from './v5-schema';
+export * from './schema';
+import { SectorKey, REFERENCE_POPULATION } from './schema';
+import { DEFAULT_EXTRACTOR_INPUTS, ExtractorInputs } from './default-inputs';
 
 export interface CityBaseline {
   cityName: string;
@@ -15,7 +17,10 @@ export interface CityBaseline {
   escalationStart: number;
   escalationEnd: number;
 
-  // Expert Mode custom overrides for all 116 input IDs
+  // The structured baseline inputs matching extraction_webfassung.py
+  extractorInputs: ExtractorInputs;
+
+  // Expert Mode custom overrides
   expertOverrides: Record<string, number>;
 
   // Measures configuration
@@ -115,6 +120,7 @@ export function createDefaultState(): CityBaseline {
     escalationStart: 2026,
     escalationEnd: 2045,
 
+    extractorInputs: JSON.parse(JSON.stringify(DEFAULT_EXTRACTOR_INPUTS)),
     expertOverrides: {},
 
     measures: {
@@ -194,6 +200,59 @@ export function createDefaultState(): CityBaseline {
   };
 }
 
+export function exportStateInputs(state: CityBaseline): ExtractorInputs {
+  return JSON.parse(JSON.stringify(state.extractorInputs));
+}
+
+export function importStateInputs(
+  state: CityBaseline,
+  rawJsonOrObj: any
+): { success: boolean; message: string; modifiedCount: number } {
+  let data = typeof rawJsonOrObj === 'string' ? JSON.parse(rawJsonOrObj) : rawJsonOrObj;
+  if (!data || typeof data !== 'object') {
+    return { success: false, message: 'Ungültiges Datenformat. Erwartet wird ein JSON-Objekt.', modifiedCount: 0 };
+  }
+
+  // Handle if wrapped in { "inputs": { ... } } (e.g. from extraction_webfassung.py fixture)
+  if (data.inputs && typeof data.inputs === 'object' && (data.inputs.buildings || data.inputs.energy)) {
+    data = data.inputs;
+  }
+
+  let domainCount = 0;
+  let keyCount = 0;
+
+  const domains = ['buildings', 'mobility', 'energy', 'economy'] as const;
+  for (const dom of domains) {
+    if (data[dom] && typeof data[dom] === 'object') {
+      domainCount++;
+      for (const [key, val] of Object.entries(data[dom])) {
+        (state.extractorInputs as any)[dom][key] = JSON.parse(JSON.stringify(val));
+        keyCount++;
+      }
+    }
+  }
+
+  if (domainCount === 0) {
+    return {
+      success: false,
+      message: 'Keine gültigen Domänen (buildings, mobility, energy, economy) im JSON gefunden.',
+      modifiedCount: 0,
+    };
+  }
+
+  // If population is present in the imported data, sync top-level population
+  if (state.extractorInputs.buildings?.n_inhabitants__k__?.private) {
+    const popK = state.extractorInputs.buildings.n_inhabitants__k__.private;
+    state.population = Math.round(popK * 1000);
+  }
+
+  return {
+    success: true,
+    message: `${keyCount} Parameter aus ${domainCount} Domänen erfolgreich importiert.`,
+    modifiedCount: keyCount,
+  };
+}
+
 export interface ScaledBaselines {
   popScale: number;
   buildings: {
@@ -269,4 +328,31 @@ export function computeScaledBaselines(population: number): ScaledBaselines {
       bikeShareBase: { private: 3.2, ghd: 3.2, kommune: 6.4 },
     },
   };
+}
+
+export function getBaselineValueForId(id: string, population: number): number {
+  const parts = id.split('/');
+  const domain = parts[0];
+  const param = parts[2];
+  const sector = parts[3] as SectorKey | undefined;
+
+  const inputs = DEFAULT_EXTRACTOR_INPUTS as any;
+  if (!inputs[domain] || !inputs[domain][param]) {
+    return 0;
+  }
+
+  const val = inputs[domain][param];
+  let baseVal = 0;
+  if (sector && typeof val === 'object' && val !== null) {
+    baseVal = val[sector] || 0;
+  } else if (typeof val === 'number') {
+    baseVal = val;
+  }
+
+  const isExtrinsic = id.includes('n_') || id.includes('floor_A_total') || id.includes('installed');
+  if (isExtrinsic && population > 0) {
+    return (baseVal * population) / (REFERENCE_POPULATION * 1000);
+  }
+
+  return baseVal;
 }

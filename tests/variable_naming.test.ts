@@ -15,7 +15,7 @@ describe('Variable Naming Convention & Unit Verification Suite', () => {
     'emissions',
   ]);
 
-  const VALID_SECTORS = new Set(['private', 'industry', 'schools', 'public']);
+  const VALID_SECTORS = new Set(['private', 'industry', 'public']);
 
   const VALID_SI_PREFIXES = new Set(['k', 'M', 'G', 'T', 'm', 'c', 'd', '1e3', '1em3']);
 
@@ -58,7 +58,7 @@ describe('Variable Naming Convention & Unit Verification Suite', () => {
       }
     });
 
-    it('ensures all sectorized variables define all 4 sectors', () => {
+    it('ensures all sectorized variables define all 3 sectors', () => {
       const sectorGroups: Record<string, string[]> = {};
       for (const id of [...inputIds, ...resultIds]) {
         const parts = id.split('/');
@@ -70,7 +70,7 @@ describe('Variable Naming Convention & Unit Verification Suite', () => {
       }
 
       for (const [basePath, sectors] of Object.entries(sectorGroups)) {
-        expect(sectors.sort()).toEqual(['industry', 'private', 'public', 'schools']);
+        expect(sectors.sort()).toEqual(['industry', 'private', 'public']);
       }
     });
   });
