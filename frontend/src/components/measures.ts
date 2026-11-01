@@ -59,34 +59,25 @@ export function getMeasureBounds(measureKey: string, scaled: ScaledBaselines): M
       return {
         isReduction: false,
         sectors: {
-          priv: { base: scaled.energy.pvRoofBase.private, max: 35.0 * scaled.popScale },
-          ghd: { base: scaled.energy.pvRoofBase.ghd, max: 45.0 * scaled.popScale },
-          kom: { base: scaled.energy.pvRoofBase.kommune, max: 3.0 * scaled.popScale },
+          priv: { base: scaled.energy.pvRoofBase.private, max: 15000.0 * scaled.popScale },
+          ghd: { base: scaled.energy.pvRoofBase.ghd, max: 14000.0 * scaled.popScale },
+          kom: { base: scaled.energy.pvRoofBase.kommune, max: 800.0 * scaled.popScale },
         },
       };
     case 'pvOpen':
       return {
         isReduction: false,
         sectors: {
-          ghd: { base: scaled.energy.pvOpenBase.ghd, max: 100.0 * scaled.popScale },
-          kom: { base: scaled.energy.pvOpenBase.kommune, max: 80.0 * scaled.popScale },
+          ghd: { base: scaled.energy.pvOpenBase.ghd, max: 10000.0 * scaled.popScale },
+          kom: { base: scaled.energy.pvOpenBase.kommune, max: 600.0 * scaled.popScale },
         },
       };
     case 'wind':
       return {
         isReduction: false,
         sectors: {
-          ghd: { base: scaled.energy.windBase.ghd, max: 250.0 * scaled.popScale },
-          kom: { base: scaled.energy.windBase.kommune, max: 40.0 * scaled.popScale },
-        },
-      };
-    case 'greenPower':
-      return {
-        isReduction: false,
-        sectors: {
-          priv: { base: scaled.energy.greenPowerBase.private, max: 180.0 * scaled.popScale },
-          ghd: { base: scaled.energy.greenPowerBase.ghd, max: 110.0 * scaled.popScale },
-          kom: { base: scaled.energy.greenPowerBase.kommune, max: 7.0 * scaled.popScale },
+          ghd: { base: scaled.energy.windBase.ghd, max: 20000.0 * scaled.popScale },
+          kom: { base: scaled.energy.windBase.kommune, max: 1200.0 * scaled.popScale },
         },
       };
     case 'evCars':
@@ -96,24 +87,6 @@ export function getMeasureBounds(measureKey: string, scaled: ScaledBaselines): M
           priv: { base: scaled.mobility.evCountBase.private, max: scaled.mobility.carsCountBase.private },
           ghd: { base: scaled.mobility.evCountBase.ghd, max: scaled.mobility.carsCountBase.ghd },
           kom: { base: scaled.mobility.evCountBase.kommune, max: scaled.mobility.carsCountBase.kommune },
-        },
-      };
-    case 'transitShare':
-      return {
-        isReduction: false,
-        sectors: {
-          priv: { base: scaled.mobility.transitShareBase.private, max: 40.0 },
-          ghd: { base: scaled.mobility.transitShareBase.ghd, max: 40.0 },
-          kom: { base: scaled.mobility.transitShareBase.kommune, max: 60.0 },
-        },
-      };
-    case 'bikeShare':
-      return {
-        isReduction: false,
-        sectors: {
-          priv: { base: scaled.mobility.bikeShareBase.private, max: 25.0 },
-          ghd: { base: scaled.mobility.bikeShareBase.ghd, max: 25.0 },
-          kom: { base: scaled.mobility.bikeShareBase.kommune, max: 30.0 },
         },
       };
     default:
@@ -383,7 +356,7 @@ export function renderMeasuresCard(): string {
               <div class="target-inputs">
                 <span>Von ${scaled.energy.pvOpenBase.ghd.toFixed(1)} auf</span>
                 <input type="number" id="inp-pvo-ghd" class="mini-input" step="5" value="${m.pvOpen.targetGHD}" />
-                <span>ha</span>
+                <span>MWp</span>
               </div>
             </div>
             <div class="target-row">
@@ -391,7 +364,7 @@ export function renderMeasuresCard(): string {
               <div class="target-inputs">
                 <span>Von ${scaled.energy.pvOpenBase.kommune.toFixed(1)} auf</span>
                 <input type="number" id="inp-pvo-kom" class="mini-input" step="5" value="${m.pvOpen.targetKommune}" />
-                <span>ha</span>
+                <span>MWp</span>
               </div>
             </div>
             <div id="pills-pvOpen">${renderPillsContent(metrics.pvOpen)}</div>
@@ -411,7 +384,7 @@ export function renderMeasuresCard(): string {
               <div class="target-inputs">
                 <span>Von ${scaled.energy.windBase.ghd.toFixed(1)} auf</span>
                 <input type="number" id="inp-wnd-ghd" class="mini-input" step="5" value="${m.wind.targetGHD}" />
-                <span>ha</span>
+                <span>MWp</span>
               </div>
             </div>
             <div class="target-row">
@@ -419,46 +392,10 @@ export function renderMeasuresCard(): string {
               <div class="target-inputs">
                 <span>Von ${scaled.energy.windBase.kommune.toFixed(1)} auf</span>
                 <input type="number" id="inp-wnd-kom" class="mini-input" step="5" value="${m.wind.targetKommune}" />
-                <span>ha</span>
+                <span>MWp</span>
               </div>
             </div>
             <div id="pills-wind">${renderPillsContent(metrics.wind)}</div>
-          </div>
-
-          <!-- Zukauf erneuerbare Energien -->
-          <div class="measure-card">
-            <div class="measure-header">
-              <label class="measure-toggle">
-                <input type="checkbox" id="chk-green-power" ${m.greenPower.enabled ? 'checked' : ''} />
-                Zukauf Ökostrom erhöhen ⓘ
-              </label>
-            </div>
-            ${renderMeasureSliderHtml('greenPower', computeMeasurePercentage('greenPower', s), m.greenPower.enabled)}
-            <div class="target-row">
-              <span class="target-label">Privat:</span>
-              <div class="target-inputs">
-                <span>Von ${scaled.energy.greenPowerBase.private.toFixed(1)} auf</span>
-                <input type="number" id="inp-gp-priv" class="mini-input" step="5" value="${m.greenPower.targetPrivate}" />
-                <span>GWh / a</span>
-              </div>
-            </div>
-            <div class="target-row">
-              <span class="target-label">GHD:</span>
-              <div class="target-inputs">
-                <span>Von ${scaled.energy.greenPowerBase.ghd.toFixed(1)} auf</span>
-                <input type="number" id="inp-gp-ghd" class="mini-input" step="5" value="${m.greenPower.targetGHD}" />
-                <span>GWh / a</span>
-              </div>
-            </div>
-            <div class="target-row">
-              <span class="target-label">Kommune:</span>
-              <div class="target-inputs">
-                <span>Von ${scaled.energy.greenPowerBase.kommune.toFixed(1)} auf</span>
-                <input type="number" id="inp-gp-kom" class="mini-input" step="0.5" value="${m.greenPower.targetKommune}" />
-                <span>GWh / a</span>
-              </div>
-            </div>
-            <div id="pills-greenPower">${renderPillsContent(metrics.greenPower)}</div>
           </div>
         </div>
       </div>
@@ -504,78 +441,6 @@ export function renderMeasuresCard(): string {
             </div>
             <div id="pills-evCars">${renderPillsContent(metrics.evCars)}</div>
           </div>
-
-          <!-- Anteil Zug/Bus erhöhen -->
-          <div class="measure-card">
-            <div class="measure-header">
-              <label class="measure-toggle">
-                <input type="checkbox" id="chk-pt" ${m.transitShare.enabled ? 'checked' : ''} />
-                Anteil Zug/Bus erhöhen ⓘ
-              </label>
-            </div>
-            ${renderMeasureSliderHtml('transitShare', computeMeasurePercentage('transitShare', s), m.transitShare.enabled)}
-            <div class="target-row">
-              <span class="target-label">Privat:</span>
-              <div class="target-inputs">
-                <span>Von 14,5 auf</span>
-                <input type="number" id="inp-pt-priv" class="mini-input" step="1" value="${m.transitShare.targetPrivate}" />
-                <span>%</span>
-              </div>
-            </div>
-            <div class="target-row">
-              <span class="target-label">GHD:</span>
-              <div class="target-inputs">
-                <span>Von 14,5 auf</span>
-                <input type="number" id="inp-pt-ghd" class="mini-input" step="1" value="${m.transitShare.targetGHD}" />
-                <span>%</span>
-              </div>
-            </div>
-            <div class="target-row">
-              <span class="target-label">Kommune:</span>
-              <div class="target-inputs">
-                <span>Von 29,0 auf</span>
-                <input type="number" id="inp-pt-kom" class="mini-input" step="1" value="${m.transitShare.targetKommune}" />
-                <span>%</span>
-              </div>
-            </div>
-            <div id="pills-transitShare">${renderPillsContent(metrics.transitShare)}</div>
-          </div>
-
-          <!-- Anteil Fahrrad erhöhen -->
-          <div class="measure-card">
-            <div class="measure-header">
-              <label class="measure-toggle">
-                <input type="checkbox" id="chk-bike" ${m.bikeShare.enabled ? 'checked' : ''} />
-                Anteil Fahrrad erhöhen ⓘ
-              </label>
-            </div>
-            ${renderMeasureSliderHtml('bikeShare', computeMeasurePercentage('bikeShare', s), m.bikeShare.enabled)}
-            <div class="target-row">
-              <span class="target-label">Privat:</span>
-              <div class="target-inputs">
-                <span>Von 3,2 auf</span>
-                <input type="number" id="inp-bk-priv" class="mini-input" step="0.5" value="${m.bikeShare.targetPrivate}" />
-                <span>%</span>
-              </div>
-            </div>
-            <div class="target-row">
-              <span class="target-label">GHD:</span>
-              <div class="target-inputs">
-                <span>Von 3,2 auf</span>
-                <input type="number" id="inp-bk-ghd" class="mini-input" step="0.5" value="${m.bikeShare.targetGHD}" />
-                <span>%</span>
-              </div>
-            </div>
-            <div class="target-row">
-              <span class="target-label">Kommune:</span>
-              <div class="target-inputs">
-                <span>Von 6,4 auf</span>
-                <input type="number" id="inp-bk-kom" class="mini-input" step="0.5" value="${m.bikeShare.targetKommune}" />
-                <span>%</span>
-              </div>
-            </div>
-            <div id="pills-bikeShare">${renderPillsContent(metrics.bikeShare)}</div>
-          </div>
         </div>
       </div>
     </section>
@@ -598,10 +463,7 @@ export function updateMeasurePills() {
   setHtml('pills-pvRoof', metrics.pvRoof);
   setHtml('pills-pvOpen', metrics.pvOpen);
   setHtml('pills-wind', metrics.wind);
-  setHtml('pills-greenPower', metrics.greenPower);
   setHtml('pills-evCars', metrics.evCars);
-  setHtml('pills-transitShare', metrics.transitShare);
-  setHtml('pills-bikeShare', metrics.bikeShare);
 }
 
 function syncSingleMeasureSlider(key: string) {
@@ -669,31 +531,15 @@ export function syncMeasuresInputsFromState() {
   setNum('inp-wnd-ghd', m.wind.targetGHD);
   setNum('inp-wnd-kom', m.wind.targetKommune);
 
-  setChk('chk-green-power', m.greenPower.enabled);
-  setNum('inp-gp-priv', m.greenPower.targetPrivate);
-  setNum('inp-gp-ghd', m.greenPower.targetGHD);
-  setNum('inp-gp-kom', m.greenPower.targetKommune);
-
   setChk('chk-ev', m.evCars.enabled);
   setNum('inp-ev-priv', m.evCars.targetPrivate);
   setNum('inp-ev-ghd', m.evCars.targetGHD);
   setNum('inp-ev-kom', m.evCars.targetKommune);
 
-  setChk('chk-pt', m.transitShare.enabled);
-  setNum('inp-pt-priv', m.transitShare.targetPrivate);
-  setNum('inp-pt-ghd', m.transitShare.targetGHD);
-  setNum('inp-pt-kom', m.transitShare.targetKommune);
-
-  setChk('chk-bike', m.bikeShare.enabled);
-  setNum('inp-bk-priv', m.bikeShare.targetPrivate);
-  setNum('inp-bk-ghd', m.bikeShare.targetGHD);
-  setNum('inp-bk-kom', m.bikeShare.targetKommune);
-
   // Sync all sliders
   [
     'heatDmd', 'gasPhaseout', 'oilPhaseout',
-    'pvRoof', 'pvOpen', 'wind', 'greenPower',
-    'evCars', 'transitShare', 'bikeShare'
+    'pvRoof', 'pvOpen', 'wind', 'evCars'
   ].forEach(syncSingleMeasureSlider);
 }
 
@@ -784,17 +630,14 @@ export function setupMeasuresListeners() {
     }
   };
 
-  // Bind all 10 Measure Sliders
+  // Bind 7 Excel-aligned Measure Sliders
   bindSlider('heatDmd', 'chk-heat-dmd', ['inp-hd-priv', 'inp-hd-ghd', 'inp-hd-kom']);
   bindSlider('gasPhaseout', 'chk-gas', ['inp-gas-priv', 'inp-gas-ghd', 'inp-gas-kom']);
   bindSlider('oilPhaseout', 'chk-oil', ['inp-oil-priv', 'inp-oil-ghd', 'inp-oil-kom']);
   bindSlider('pvRoof', 'chk-pv-roof', ['inp-pvr-priv', 'inp-pvr-ghd', 'inp-pvr-kom']);
   bindSlider('pvOpen', 'chk-pv-open', [null, 'inp-pvo-ghd', 'inp-pvo-kom']);
   bindSlider('wind', 'chk-wind', [null, 'inp-wnd-ghd', 'inp-wnd-kom']);
-  bindSlider('greenPower', 'chk-green-power', ['inp-gp-priv', 'inp-gp-ghd', 'inp-gp-kom']);
   bindSlider('evCars', 'chk-ev', ['inp-ev-priv', 'inp-ev-ghd', 'inp-ev-kom']);
-  bindSlider('transitShare', 'chk-pt', ['inp-pt-priv', 'inp-pt-ghd', 'inp-pt-kom']);
-  bindSlider('bikeShare', 'chk-bike', ['inp-bk-priv', 'inp-bk-ghd', 'inp-bk-kom']);
 
   // Direct Numeric Input Handlers (also sync sliders)
   // Heat Demand
@@ -867,18 +710,6 @@ export function setupMeasuresListeners() {
   };
   ['inp-wnd-ghd', 'inp-wnd-kom'].forEach(id => bind(id, updateWnd));
 
-  // Green Power
-  const updateGp = () => {
-    store.updateState(s => {
-      s.measures.greenPower.enabled = chkVal('chk-green-power');
-      s.measures.greenPower.targetPrivate = numVal('inp-gp-priv');
-      s.measures.greenPower.targetGHD = numVal('inp-gp-ghd');
-      s.measures.greenPower.targetKommune = numVal('inp-gp-kom');
-    });
-    syncSingleMeasureSlider('greenPower');
-  };
-  ['inp-gp-priv', 'inp-gp-ghd', 'inp-gp-kom'].forEach(id => bind(id, updateGp));
-
   // EV
   const updateEv = () => {
     store.updateState(s => {
@@ -890,28 +721,4 @@ export function setupMeasuresListeners() {
     syncSingleMeasureSlider('evCars');
   };
   ['inp-ev-priv', 'inp-ev-ghd', 'inp-ev-kom'].forEach(id => bind(id, updateEv));
-
-  // Public Transit
-  const updatePt = () => {
-    store.updateState(s => {
-      s.measures.transitShare.enabled = chkVal('chk-pt');
-      s.measures.transitShare.targetPrivate = numVal('inp-pt-priv');
-      s.measures.transitShare.targetGHD = numVal('inp-pt-ghd');
-      s.measures.transitShare.targetKommune = numVal('inp-pt-kom');
-    });
-    syncSingleMeasureSlider('transitShare');
-  };
-  ['inp-pt-priv', 'inp-pt-ghd', 'inp-pt-kom'].forEach(id => bind(id, updatePt));
-
-  // Bike
-  const updateBk = () => {
-    store.updateState(s => {
-      s.measures.bikeShare.enabled = chkVal('chk-bike');
-      s.measures.bikeShare.targetPrivate = numVal('inp-bk-priv');
-      s.measures.bikeShare.targetGHD = numVal('inp-bk-ghd');
-      s.measures.bikeShare.targetKommune = numVal('inp-bk-kom');
-    });
-    syncSingleMeasureSlider('bikeShare');
-  };
-  ['inp-bk-priv', 'inp-bk-ghd', 'inp-bk-kom'].forEach(id => bind(id, updateBk));
 }

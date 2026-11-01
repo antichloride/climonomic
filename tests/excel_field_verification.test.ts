@@ -76,8 +76,8 @@ describe('Excel Field Verification Suite', () => {
     expect(res.success).toBe(true);
     expect(res.modifiedCount).toBeGreaterThan(20);
 
-    // Population should be 11238 (in 1.000 Ew. dimension)
-    expect(state.population).toBe(11238);
+    // Population should be 11.238 (in 1.000 Ew. dimension)
+    expect(state.population).toBeCloseTo(11.238, 3);
 
     // Measures targets should be synced
     expect(state.measures.heatDmd.targetPrivate).toBe(Math.round(fixture.measures.private.heat_demand.target_kWh_per_m2_a));
@@ -88,10 +88,10 @@ describe('Excel Field Verification Suite', () => {
 
     // Ensure getBaselineValueForId with state.extractorInputs returns accurate values
     const carVal = getBaselineValueForId('mobility/inputs/n_cars__k__/private', state.population, state.extractorInputs);
-    expect(carVal).toBeCloseTo(5870.12, 1);
+    expect(carVal).toBeCloseTo(5.87, 1);
 
     const roofPvVal = getBaselineValueForId('energy/inputs/solar_roof_installed__MWp/private', state.population, state.extractorInputs);
-    expect(roofPvVal).toBeCloseTo(3837.27, 1);
+    expect(roofPvVal).toBeCloseTo(3.84, 1);
   });
 
   it('verifies that running simulation with imported state matches expected Excel summary outputs', () => {

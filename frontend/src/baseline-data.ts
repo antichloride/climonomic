@@ -72,41 +72,23 @@ export interface CityBaseline {
     };
     pvOpen: {
       enabled: boolean;
-      targetPrivate: number; // ha
-      targetGHD: number;     // ha (default 76.2, from 18.0)
-      targetKommune: number; // ha (default 60.0, from 0.0)
+      targetPrivate: number; // MWp
+      targetGHD: number;     // MWp
+      targetKommune: number; // MWp
     };
     wind: {
       enabled: boolean;
       targetPrivate: number;
-      targetGHD: number;     // ha (default 164.9, from 144.9)
-      targetKommune: number; // ha (default 20.0, from 0.0)
-    };
-    greenPower: {
-      enabled: boolean;
-      targetPrivate: number; // GWh (default 159.5, from 22.4)
-      targetGHD: number;     // GWh (default 91.7, from 20.7)
-      targetKommune: number; // GWh (default 5.9, from 1.1)
+      targetGHD: number;     // MWp
+      targetKommune: number; // MWp
     };
 
     // Sector 3: Mobility
     evCars: {
       enabled: boolean;
-      targetPrivate: number; // tsd vehicles (default 25.3, from 0.6)
-      targetGHD: number;     // tsd vehicles (default 2.9, from 0.1)
-      targetKommune: number; // tsd vehicles (default 0.2, from 0.0)
-    };
-    transitShare: {
-      enabled: boolean;
-      targetPrivate: number; // % (default 14.5)
-      targetGHD: number;     // % (default 14.5)
-      targetKommune: number; // % (default 29.0)
-    };
-    bikeShare: {
-      enabled: boolean;
-      targetPrivate: number; // % (default 3.2)
-      targetGHD: number;     // % (default 3.2)
-      targetKommune: number; // % (default 6.4)
+      targetPrivate: number; // tsd vehicles
+      targetGHD: number;     // tsd vehicles
+      targetKommune: number; // tsd vehicles
     };
   };
 }
@@ -114,7 +96,7 @@ export interface CityBaseline {
 export function createDefaultState(): CityBaseline {
   return {
     cityName: 'Kassel',
-    population: 11238,
+    population: 11.238,
     startYear: 2026,
     endYear: 2040,
 
@@ -166,45 +148,27 @@ export function createDefaultState(): CityBaseline {
       },
       pvRoof: {
         enabled: true,
-        targetPrivate: 14.2,
-        targetGHD: 19.8,
-        targetKommune: 1.0,
+        targetPrivate: 11.5,
+        targetGHD: 10.7,
+        targetKommune: 0.6,
       },
       pvOpen: {
         enabled: true,
         targetPrivate: 0.0,
-        targetGHD: 76.2,
-        targetKommune: 60.0,
+        targetGHD: 8.2,
+        targetKommune: 0.4,
       },
       wind: {
         enabled: true,
         targetPrivate: 0.0,
-        targetGHD: 164.9,
-        targetKommune: 20.0,
-      },
-      greenPower: {
-        enabled: true,
-        targetPrivate: 159.5,
-        targetGHD: 91.7,
-        targetKommune: 5.9,
+        targetGHD: 16.5,
+        targetKommune: 0.9,
       },
       evCars: {
         enabled: true,
-        targetPrivate: 25.3,
-        targetGHD: 2.9,
-        targetKommune: 0.2,
-      },
-      transitShare: {
-        enabled: true,
-        targetPrivate: 14.5,
-        targetGHD: 14.5,
-        targetKommune: 29.0,
-      },
-      bikeShare: {
-        enabled: true,
-        targetPrivate: 3.2,
-        targetGHD: 3.2,
-        targetKommune: 6.4,
+        targetPrivate: 5.9,
+        targetGHD: 0.7,
+        targetKommune: 0.04,
       },
     },
   };
@@ -330,19 +294,12 @@ export function importStateInputs(
     if (m.public?.mobility?.bev_count_target__k__ != null) {
       state.measures.evCars.targetKommune = Number(m.public.mobility.bev_count_target__k__.toFixed(1));
     }
-
-    if (m.private?.mobility?.modal_split_pt_part != null) {
-      state.measures.transitShare.targetPrivate = Number((m.private.mobility.modal_split_pt_part * 100).toFixed(1));
-    }
-    if (m.private?.mobility?.modal_split_bike_part != null) {
-      state.measures.bikeShare.targetPrivate = Number((m.private.mobility.modal_split_bike_part * 100).toFixed(1));
-    }
   }
 
   // If population is present in the imported data, sync top-level population (in 1.000 Ew. dimension)
   if (state.extractorInputs.buildings?.n_inhabitants__k__?.private) {
     const popK = state.extractorInputs.buildings.n_inhabitants__k__.private;
-    state.population = Math.round(popK);
+    state.population = popK >= 1000 ? popK / 1000 : popK;
   }
 
   return {
@@ -363,13 +320,10 @@ export interface ScaledBaselines {
     pvRoofBase: { private: number; ghd: number; kommune: number };
     pvOpenBase: { private: number; ghd: number; kommune: number };
     windBase: { private: number; ghd: number; kommune: number };
-    greenPowerBase: { private: number; ghd: number; kommune: number };
   };
   mobility: {
     carsCountBase: { private: number; ghd: number; kommune: number };
     evCountBase: { private: number; ghd: number; kommune: number };
-    transitShareBase: { private: number; ghd: number; kommune: number };
-    bikeShareBase: { private: number; ghd: number; kommune: number };
   };
 }
 
@@ -398,18 +352,13 @@ export function computeScaledBaselines(population: number): ScaledBaselines {
       },
       pvOpenBase: {
         private: 0.0,
-        ghd: 18.0 * (popScale * 224.76),
-        kommune: 0.0,
+        ghd: 4081.59 * popScale,
+        kommune: 214.82 * popScale,
       },
       windBase: {
         private: 0.0,
-        ghd: 144.9 * (popScale * 224.76),
-        kommune: 0.0,
-      },
-      greenPowerBase: {
-        private: 22.4 * (popScale * 224.76),
-        ghd: 20.7 * (popScale * 224.76),
-        kommune: 1.1 * (popScale * 224.76),
+        ghd: 8268.54 * popScale,
+        kommune: 435.19 * popScale,
       },
     },
     mobility: {
@@ -423,8 +372,6 @@ export function computeScaledBaselines(population: number): ScaledBaselines {
         ghd: 24.50 * popScale,
         kommune: 1.29 * popScale,
       },
-      transitShareBase: { private: 14.5, ghd: 14.5, kommune: 29.0 },
-      bikeShareBase: { private: 3.2, ghd: 3.2, kommune: 6.4 },
     },
   };
 }

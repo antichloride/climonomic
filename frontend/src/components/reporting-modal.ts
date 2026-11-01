@@ -32,7 +32,7 @@ export function openReportingModal() {
             Klimarechner — Strategischer Ergebnisbericht
           </h2>
           <p style="font-size: var(--k-font-size-sm); color: var(--k-color-text-muted); margin-top: 4px;">
-            Für <strong>${s.cityName}</strong> (${s.population.toLocaleString('de-DE')} Einwohner) im Transformationszeitraum <strong>${s.startYear} bis ${s.endYear}</strong>
+            Für <strong>${s.cityName}</strong> (${Math.round(s.population * 1000).toLocaleString('de-DE')} Einwohner) im Transformationszeitraum <strong>${s.startYear} bis ${s.endYear}</strong>
           </p>
         </div>
         <button class="modal-close" id="btn-close-reporting" title="Schließen">✕</button>

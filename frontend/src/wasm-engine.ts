@@ -368,52 +368,6 @@ export const MEASURE_DEFINITIONS: Record<
       return list;
     },
   },
-  greenPower: {
-    id: 'greenPower',
-    name: 'Zukauf erneuerbare Energien erhöhen',
-    getInterventions: (s, b, startYear, endYear) => {
-      const list: MeasureIntervention[] = [];
-      const m = s.measures.greenPower;
-      const basePriv =
-        b['energy/inputs/prchsd_renewable_nrg__G__W_h_per_a/private'] || 4.67;
-      const baseGhd =
-        b['energy/inputs/prchsd_renewable_nrg__G__W_h_per_a/industry'] || 0.47;
-      const baseKom =
-        b['energy/inputs/prchsd_renewable_nrg__G__W_h_per_a/public'] || 0.12;
-
-      const dPriv = m.targetPrivate - basePriv;
-      const dGhd = m.targetGHD - baseGhd;
-      const dKom = m.targetKommune - baseKom;
-
-      if (dPriv > 0)
-        list.push({
-          id: 'm_gp_priv',
-          inputId:
-            'energy/inputs/prchsd_renewable_nrg__G__W_h_per_a/private',
-          startYear,
-          endYear,
-          delta: -dPriv,
-        });
-      if (dGhd > 0)
-        list.push({
-          id: 'm_gp_ghd',
-          inputId:
-            'energy/inputs/prchsd_renewable_nrg__G__W_h_per_a/industry',
-          startYear,
-          endYear,
-          delta: -dGhd,
-        });
-      if (dKom > 0)
-        list.push({
-          id: 'm_gp_pub',
-          inputId: 'energy/inputs/prchsd_renewable_nrg__G__W_h_per_a/public',
-          startYear,
-          endYear,
-          delta: -dKom,
-        });
-      return list;
-    },
-  },
   evCars: {
     id: 'evCars',
     name: 'PKW mit E-Autos ersetzen',
@@ -791,8 +745,8 @@ export function runSimulation(state: CityBaseline): SimulationOutput {
   const startCO2Total = Math.max(1, runBaseline.totalCO2[0]);
   const endCO2Baseline = runBaseline.totalCO2[endIdx] ?? runBaseline.totalCO2[runBaseline.totalCO2.length - 1];
   const endCO2Active = runActive.totalCO2[endIdx] ?? runActive.totalCO2[runActive.totalCO2.length - 1];
-  const extraAvoidedBaseline = (runBaseline.solOsNrgTotal[endIdx] + runBaseline.windNrgTotal[endIdx] + runBaseline.greenNrgTotal[endIdx]) * 0.401;
-  const extraAvoidedActive = (runActive.solOsNrgTotal[endIdx] + runActive.windNrgTotal[endIdx] + runActive.greenNrgTotal[endIdx]) * 0.401;
+  const extraAvoidedBaseline = (runBaseline.solOsNrgTotal[endIdx] + runBaseline.windNrgTotal[endIdx]) * 0.401;
+  const extraAvoidedActive = (runActive.solOsNrgTotal[endIdx] + runActive.windNrgTotal[endIdx]) * 0.401;
   const extraAvoidedDiff = Math.max(0, extraAvoidedActive - extraAvoidedBaseline);
   const co2ReductionTsdTonnes = Math.max(0, endCO2Baseline - endCO2Active) + extraAvoidedDiff;
   const overallReductionPct = Math.min(100, Math.max(0, (co2ReductionTsdTonnes / startCO2Total) * 100));
@@ -981,12 +935,6 @@ export function runSimulation(state: CityBaseline): SimulationOutput {
           0,
           currentRun.windNrgTotal[endIdx] - prevRun.windNrgTotal[endIdx]
         ) * 0.401;
-    } else if (key === 'greenPower') {
-      extraAvoidedCO2 =
-        Math.max(
-          0,
-          currentRun.greenNrgTotal[endIdx] - prevRun.greenNrgTotal[endIdx]
-        ) * 0.401;
     }
 
     const co2DiffDirect = Math.max(
@@ -1011,12 +959,6 @@ export function runSimulation(state: CityBaseline): SimulationOutput {
           Math.max(
             0,
             currentRun.windNrgTotal[i] - prevRun.windNrgTotal[i]
-          ) * 0.401;
-      } else if (key === 'greenPower') {
-        extraAvoidedY =
-          Math.max(
-            0,
-            currentRun.greenNrgTotal[i] - prevRun.greenNrgTotal[i]
           ) * 0.401;
       }
       cumCO2Reduction +=
@@ -1049,9 +991,6 @@ export function runSimulation(state: CityBaseline): SimulationOutput {
         );
         if (cumEffDiff > 0) {
           costPerTonCO2 = (cumEffDiff * 1000) / cumCO2Reduction;
-        } else if (key === 'greenPower') {
-          // Renewable electricity procurement tariff surcharge (~2.0 ct/kWh = ~38.5 €/t CO2)
-          costPerTonCO2 = 38.5;
         }
       }
     }

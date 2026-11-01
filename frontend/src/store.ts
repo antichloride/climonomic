@@ -167,8 +167,10 @@ class SimulationStore {
       const queryString = hash.replace(/^#v1&/, '');
       const params = new URLSearchParams(queryString);
 
-      if (params.has('city')) this.state.cityName = params.get('city')!;
-      if (params.has('pop')) this.state.population = Number(params.get('pop')) || 11238;
+      if (params.has('pop')) {
+        const rawPop = Number(params.get('pop')) || 11.238;
+        this.state.population = rawPop >= 1000 ? rawPop / 1000 : rawPop;
+      }
       if (params.has('y0')) this.state.startYear = Number(params.get('y0')) || 2026;
       if (params.has('y1')) this.state.endYear = Number(params.get('y1')) || 2040;
       if (params.has('co2p')) this.state.priceCO2 = Number(params.get('co2p')) || 50;

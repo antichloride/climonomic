@@ -244,10 +244,17 @@ export function setupCityDataListeners() {
     store.updateState(s => { s.cityName = val; });
   });
 
-  document.getElementById('input-city-pop')?.addEventListener('change', (e) => {
-    const val = Math.max(1000, Number((e.target as HTMLInputElement).value) || 50000);
-    store.updateState(s => { s.population = val; });
-  });
+  const popInput = document.getElementById('input-city-pop') as HTMLInputElement | null;
+  const updatePop = () => {
+    if (!popInput) return;
+    const raw = popInput.value.replace(',', '.');
+    const val = parseFloat(raw);
+    if (!isNaN(val) && val > 0) {
+      store.updateState(s => { s.population = val; });
+    }
+  };
+  popInput?.addEventListener('input', updatePop);
+  popInput?.addEventListener('change', updatePop);
 
   // Initialize progress tracks
   syncProgress('slider-end-year');

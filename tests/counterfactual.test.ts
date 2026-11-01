@@ -141,26 +141,7 @@ const MEASURE_DEFINITIONS: Record<string, {
       return list;
     },
   },
-  greenPower: {
-    id: 'greenPower',
-    name: 'Zukauf erneuerbare Energien erhöhen',
-    getInterventions: (s, b, startYear, endYear) => {
-      const list: MeasureIntervention[] = [];
-      const m = s.measures.greenPower;
-      const basePriv = b['energy/inputs/prchsd_renewable_nrg__G__W_h_per_a/private'] || 4.67;
-      const baseGhd = b['energy/inputs/prchsd_renewable_nrg__G__W_h_per_a/industry'] || 0.47;
-      const baseKom = b['energy/inputs/prchsd_renewable_nrg__G__W_h_per_a/public'] || 0.12;
 
-      const dPriv = m.targetPrivate - basePriv;
-      const dGhd = m.targetGHD - baseGhd;
-      const dKom = m.targetKommune - baseKom;
-
-      if (dPriv > 0) list.push({ id: 'm_gp_priv', inputId: 'energy/inputs/prchsd_renewable_nrg__G__W_h_per_a/private', startYear, endYear, delta: -dPriv });
-      if (dGhd > 0) list.push({ id: 'm_gp_ghd', inputId: 'energy/inputs/prchsd_renewable_nrg__G__W_h_per_a/industry', startYear, endYear, delta: -dGhd });
-      if (dKom > 0) list.push({ id: 'm_gp_pub', inputId: 'energy/inputs/prchsd_renewable_nrg__G__W_h_per_a/public', startYear, endYear, delta: -dKom });
-      return list;
-    },
-  },
   evCars: {
     id: 'evCars',
     name: 'PKW mit E-Autos ersetzen',
@@ -405,8 +386,6 @@ describe('Counterfactual Simulation Verification', () => {
         extraAvoidedCO2 = Math.max(0, runActive.solOsNrgTotal[endIdx] - runWithout.solOsNrgTotal[endIdx]) * 0.401;
       } else if (key === 'wind') {
         extraAvoidedCO2 = Math.max(0, runActive.windNrgTotal[endIdx] - runWithout.windNrgTotal[endIdx]) * 0.401;
-      } else if (key === 'greenPower') {
-        extraAvoidedCO2 = Math.max(0, runActive.greenNrgTotal[endIdx] - runWithout.greenNrgTotal[endIdx]) * 0.401;
       }
 
       const co2DiffDirect = Math.max(0, runWithout.totalCO2[endIdx] - runActive.totalCO2[endIdx]);
@@ -420,8 +399,6 @@ describe('Counterfactual Simulation Verification', () => {
           extraAvoidedY = Math.max(0, runActive.solOsNrgTotal[i] - runWithout.solOsNrgTotal[i]) * 0.401;
         } else if (key === 'wind') {
           extraAvoidedY = Math.max(0, runActive.windNrgTotal[i] - runWithout.windNrgTotal[i]) * 0.401;
-        } else if (key === 'greenPower') {
-          extraAvoidedY = Math.max(0, runActive.greenNrgTotal[i] - runWithout.greenNrgTotal[i]) * 0.401;
         }
         cumCO2Reduction += Math.max(0, runWithout.totalCO2[i] - runActive.totalCO2[i]) + extraAvoidedY;
       }
@@ -688,8 +665,6 @@ describe('Counterfactual Simulation Verification', () => {
         extraAvoidedCO2 = Math.max(0, currentRun.solOsNrgTotal[endIdx] - prevRun.solOsNrgTotal[endIdx]) * 0.401;
       } else if (key === 'wind') {
         extraAvoidedCO2 = Math.max(0, currentRun.windNrgTotal[endIdx] - prevRun.windNrgTotal[endIdx]) * 0.401;
-      } else if (key === 'greenPower') {
-        extraAvoidedCO2 = Math.max(0, currentRun.greenNrgTotal[endIdx] - prevRun.greenNrgTotal[endIdx]) * 0.401;
       }
 
       const co2DiffDirect = Math.max(0, prevRun.totalCO2[endIdx] - currentRun.totalCO2[endIdx]);
@@ -703,8 +678,6 @@ describe('Counterfactual Simulation Verification', () => {
           extraAvoidedY = Math.max(0, currentRun.solOsNrgTotal[i] - prevRun.solOsNrgTotal[i]) * 0.401;
         } else if (key === 'wind') {
           extraAvoidedY = Math.max(0, currentRun.windNrgTotal[i] - prevRun.windNrgTotal[i]) * 0.401;
-        } else if (key === 'greenPower') {
-          extraAvoidedY = Math.max(0, currentRun.greenNrgTotal[i] - prevRun.greenNrgTotal[i]) * 0.401;
         }
         cumCO2Reduction += Math.max(0, prevRun.totalCO2[i] - currentRun.totalCO2[i]) + extraAvoidedY;
       }
@@ -794,8 +767,23 @@ describe('Counterfactual Simulation Verification', () => {
     console.log(`runSimulation total reduction: ${out.kpis.all.co2ReductionTsdTonnes.toFixed(1)} kt (${out.kpis.all.co2ReductionPercent.toFixed(1)}%)`);
     console.log(`runSimulation sum of measures: ${sumTsd.toFixed(1)} kt (${sumPct.toFixed(1)}%)`);
 
+    const startCO2Total = out.co2Trajectory.baseline[0];
+    const rawTotalPct = (out.kpis.all.co2ReductionTsdTonnes / startCO2Total) * 100;
     expect(Math.abs(sumTsd - out.kpis.all.co2ReductionTsdTonnes)).toBeLessThan(1.0);
-    expect(Math.abs(sumPct - out.kpis.all.co2ReductionPercent)).toBeLessThan(0.2);
+    expect(Math.abs(sumPct - rawTotalPct)).toBeLessThan(0.2);
+  });
+
+  it('verifies scaling when population is 11.238 (11,238 inhabitants in 1.000 Ew. dimension)', () => {
+    const state = createDefaultState();
+    state.population = 11.238;
+    const out = runSimulation(state);
+    console.log('--- FOR POPULATION = 11.238 (11,238 Ew) ---');
+    console.log('Investitionen Total:', out.kpis.all.investTotalMio, 'Mio. €');
+    console.log('Direkte Effekte:', out.kpis.all.effectsPerYearMio, 'Mio. €/a');
+    console.log('Investitionen Kommune:', out.kpis.kommune.investTotalMio, 'Mio. €');
+    console.log('Direkte Effekte Kommune:', out.kpis.kommune.effectsPerYearMio, 'Mio. €/a');
+    console.log('CO2 Reduktion:', out.kpis.all.co2ReductionTsdTonnes, 'kt');
+    expect(out.kpis.all.investTotalMio).toBeCloseTo(103.8, 1);
   });
 });
 
