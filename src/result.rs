@@ -51,6 +51,10 @@ impl Results{
         }
     }
 
+    pub fn set_year_values(&mut self, year: u32, value: impl std::borrow::Borrow<f64>) {
+        self.set_year_value(year, *value.borrow());
+    }
+
     pub fn get_values(& self) -> &Vec<f64>{
         return & self.values;
     }

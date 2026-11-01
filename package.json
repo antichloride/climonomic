@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "extract": "python3 scripts/extraction_v5.py \"examples/data/Rechnung Parameter v5.xlsx\" tests/fixtures/v5_rechnung.json",
-    "build:wasm": "wasm-pack build --target nodejs --out-dir pkg",
+    "build:wasm": "PATH=\"$HOME/.cargo/bin:$PATH\" wasm-pack build --target nodejs --out-dir pkg",
     "build:wasm:web": "PATH=\"$HOME/.cargo/bin:$PATH\" wasm-pack build --target web --out-dir pkg-web",
     "dev": "npm --prefix frontend run dev",
     "test": "vitest run",

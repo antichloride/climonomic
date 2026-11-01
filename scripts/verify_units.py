@@ -2,27 +2,24 @@
 """
 Unit and Dimensional Verification Script for Climonomic Simulation Engine
 
-This script scans Rust source files for annotated calculation equations:
-    // @eq: <result_variable> = <expression>
-    /// @equation: <result_variable> = <expression>
-
-For each equation, it:
-1. Parses the LHS target variable and the RHS expression AST.
-2. Extracts physical units and SI scale multipliers from variable identifier suffixes (__<unit>).
-3. Evaluates dimensional algebra across operations (*, /, +, -).
-4. Asserts that:
+This script verifies equations directly from the Rust calculator source code:
+1. Parses Rust assignment statements: `let <target_var> = <expression>;`
+2. Also recognizes explicit annotations: `// @eq: <target_var> = <expression>`
+3. Extracts physical units and SI scale multipliers from variable identifier suffixes (__<unit>).
+4. Evaluates dimensional algebra across operations (*, /, +, -) and method calls.
+5. Asserts that:
    - Physical dimensions match (e.g. Energy == Energy).
    - Numeric scale factors balance to 1.0 (verifying that conversion constants like 1e-3, 1000, etc. are correct).
 
 Usage:
-    python3 scripts/verify_units.py [path/to/src]
+    python3 scripts/verify_units.py [--mode rust|comments|all] [path/to/src]
 """
 
 import ast
 import re
 import sys
 from pathlib import Path
-from typing import Dict, Tuple, Optional
+from typing import Dict, List, Tuple, Optional, Set
 
 # Physical dimensions recognized in the Climonomic parameter catalog:
 # Mapping: token -> (dimension_key, base_scale_multiplier)
@@ -247,9 +244,49 @@ class ExpressionResult:
 
 
 class FormulaEvaluator(ast.NodeVisitor):
+    def __init__(self, var_map: Optional[Dict[str, str]] = None):
+        self.var_map = var_map or {}
+
     def visit_Name(self, node: ast.Name) -> ExpressionResult:
-        qty = parse_var_name_units(node.id)
+        real_name = self.var_map.get(node.id, node.id)
+        qty = parse_var_name_units(real_name)
         return ExpressionResult(var_scale=qty.scale, k_factor=1.0, dimensions=qty.dims)
+
+    def visit_Attribute(self, node: ast.Attribute) -> ExpressionResult:
+        if node.attr in ('get_year', 'copy', 'sum', 'private', 'industry', 'schools', 'public'):
+            return self.visit(node.value)
+        if node.attr == 'is_greater':
+            return ExpressionResult(var_scale=1.0, k_factor=1.0, dimensions={})
+        if '__' in node.attr:
+            qty = parse_var_name_units(node.attr)
+            return ExpressionResult(var_scale=qty.scale, k_factor=1.0, dimensions=qty.dims)
+        
+        # Check if the object value itself carries dimensions
+        val = self.visit(node.value)
+        if val.dims:
+            return val
+        qty = parse_var_name_units(node.attr)
+        return ExpressionResult(var_scale=qty.scale, k_factor=1.0, dimensions=qty.dims)
+
+    def visit_Call(self, node: ast.Call) -> ExpressionResult:
+        if isinstance(node.func, ast.Attribute):
+            if node.func.attr in ('get_year', 'copy', 'sum', 'private', 'industry', 'schools', 'public'):
+                return self.visit(node.func.value)
+            if node.func.attr == 'is_greater':
+                return ExpressionResult(var_scale=1.0, k_factor=1.0, dimensions={})
+            if '__' in node.func.attr:
+                qty = parse_var_name_units(node.func.attr)
+                return ExpressionResult(var_scale=qty.scale, k_factor=1.0, dimensions=qty.dims)
+            # Evaluate receiver
+            val = self.visit(node.func.value)
+            if val.dims:
+                return val
+        elif isinstance(node.func, ast.Name):
+            real_name = self.var_map.get(node.func.id, node.func.id)
+            if '__' in real_name:
+                qty = parse_var_name_units(real_name)
+                return ExpressionResult(var_scale=qty.scale, k_factor=1.0, dimensions=qty.dims)
+        return ExpressionResult(var_scale=1.0, k_factor=1.0, dimensions={})
 
     def visit_Constant(self, node: ast.Constant) -> ExpressionResult:
         if isinstance(node.value, (int, float)):
@@ -291,7 +328,13 @@ def verify_equation(lhs_str: str, rhs_str: str) -> Tuple[bool, str]:
     """
     try:
         lhs_qty = parse_var_name_units(lhs_str.strip())
-        rhs_tree = ast.parse(rhs_str.strip(), mode='eval')
+        
+        # Clean Rust syntax if present
+        clean_rhs = re.sub(r'//[^\n]*', '', rhs_str)
+        clean_rhs = re.sub(r'&\s*', '', clean_rhs).replace('::', '.')
+        clean_rhs = ' '.join(clean_rhs.split())
+
+        rhs_tree = ast.parse(clean_rhs, mode='eval')
         evaluator = FormulaEvaluator()
         rhs_res = evaluator.visit(rhs_tree.body)
 
@@ -315,8 +358,6 @@ def verify_equation(lhs_str: str, rhs_str: str) -> Tuple[bool, str]:
             )
 
         # 2. Scale Factor Balance Check
-        # Physical equality of stored values:
-        # k_factor * scale(LHS) == rhs_res.var_scale
         lhs_effective = rhs_res.k_factor * lhs_qty.scale
         rhs_effective = rhs_res.var_scale
         
@@ -334,35 +375,118 @@ def verify_equation(lhs_str: str, rhs_str: str) -> Tuple[bool, str]:
         return False, str(e)
 
 
-def scan_file_for_equations(file_path: Path):
+def extract_equations_from_rust_file(file_path: Path, mode: str = "rust") -> List[Tuple[int, str, str, str]]:
     """
-    Scans a source file for comments matching:
-      // @eq: <lhs> = <rhs>
-      /// @equation: <lhs> = <rhs>
+    Extracts equations from a Rust source file.
+    Modes:
+      - 'rust': Extracts actual executable Rust assignments (`let <var> = <expr>;`) directly.
+      - 'comments': Extracts only comments annotated with `// @eq:`.
+      - 'all': Combines Rust code assignments with explicit comments.
     """
-    pattern = re.compile(r'^\s*///?\s*@(?:eq|equation):\s*([^=]+)=(.+)$')
-    equations = []
+    content = file_path.read_text(encoding='utf-8')
+    lines = content.splitlines()
+    eq_pattern = re.compile(r'^\s*///?\s*@(?:eq|equation):\s*([^=]+)=(.+)$')
+    
+    annotated_eqs = []
+    annotated_vars = set()
+    for idx, line in enumerate(lines, 1):
+        m = eq_pattern.match(line)
+        if m:
+            lhs = m.group(1).strip()
+            rhs = m.group(2).strip()
+            annotated_eqs.append((idx, lhs, rhs, 'Comment Annotation'))
+            annotated_vars.add(lhs)
 
-    with open(file_path, 'r', encoding='utf-8') as f:
-        for line_num, line in enumerate(f, 1):
-            match = pattern.match(line)
-            if match:
-                lhs = match.group(1).strip()
-                rhs = match.group(2).strip()
-                equations.append((line_num, lhs, rhs))
+    if mode == "comments":
+        return annotated_eqs
 
-    return equations
+    # Direct Rust code extraction
+    let_pattern = re.compile(r'let\s+(?:mut\s+)?([a-zA-Z0-9_]+)\s*=\s*([^;]+);', re.MULTILINE | re.DOTALL)
+    setter_pattern = re.compile(r'(?:self\.|results\.)([a-zA-Z0-9_]+__[a-zA-Z0-9_]+)\s*\.set_year_values?\s*\([^,]+,\s*&?([^)]+)\);')
+    
+    setter_map = {}
+    for m in setter_pattern.finditer(content):
+        target_var = m.group(1)
+        arg = m.group(2).strip().strip('&').strip()
+        setter_map[arg] = target_var
+
+    rust_eqs = []
+
+    # Declarative equation! macro extraction
+    macro_pattern = re.compile(r'equation!\s*\{([^}]+)\}', re.MULTILINE | re.DOTALL)
+    for m in macro_pattern.finditer(content):
+        body = m.group(1)
+        code_lines = [l.strip() for l in body.splitlines() if not l.strip().startswith('///') and l.strip()]
+        code = ' '.join(code_lines)
+        if '=' in code:
+            lhs_part, rhs_part = code.split('=', 1)
+            raw_lhs = lhs_part.strip()
+            var = raw_lhs.split('[')[0].strip()
+            if '.' in var:
+                var = var.split('.')[-1].strip()
+            if var.startswith('let mut'):
+                var = var[7:].strip()
+            elif var.startswith('let'):
+                var = var[3:].strip()
+
+            raw_expr = rhs_part.strip().rstrip(';').strip()
+            line_num = content[:m.start()].count('\n') + 1
+            clean_expr = ' '.join(raw_expr.split())
+            rust_eqs.append((line_num, var, clean_expr, 'Declarative Macro'))
+
+    for m in let_pattern.finditer(content):
+        var = m.group(1)
+        target_var = var
+        if '__' not in target_var and var in setter_map:
+            target_var = setter_map[var]
+            
+        if '__' not in target_var:
+            continue
+            
+        raw_expr = m.group(2)
+        if not any(op in raw_expr for op in ['*', '/', '+', '-']):
+            continue
+        if '{' in raw_expr or '::new' in raw_expr:
+            continue
+
+        line_num = content[:m.start()].count('\n') + 1
+        clean_expr = ' '.join(raw_expr.split())
+        rust_eqs.append((line_num, target_var, clean_expr, 'Rust Code'))
+
+    if mode == "rust":
+        # Prioritize Rust code directly; if an equation is in Rust code, use Rust code
+        return rust_eqs
+    
+    # Mode == 'all'
+    seen = set()
+    combined = []
+    for line_num, lhs, rhs, src in annotated_eqs + rust_eqs:
+        key = (lhs, line_num)
+        if key not in seen:
+            seen.add(key)
+            combined.append((line_num, lhs, rhs, src))
+    return combined
 
 
 def main():
     root_dir = Path(__file__).resolve().parent.parent
     src_dir = root_dir / "src"
-    if len(sys.argv) > 1:
-        src_dir = Path(sys.argv[1])
+    
+    mode = "rust"  # Default: verify directly from Rust code
+    for arg in sys.argv[1:]:
+        if arg.startswith("--mode="):
+            mode = arg.split("=", 1)[1]
+        elif arg == "--comments-only":
+            mode = "comments"
+        elif arg == "--all":
+            mode = "all"
+        elif not arg.startswith("-"):
+            src_dir = Path(arg)
 
     print("============================================================")
     print(" Climonomic Unit & Dimensional Verification Suite")
-    print(f" Scanning Rust files in: {src_dir}")
+    print(f" Source Mode:  [{mode.upper()}] (Parsing executable Rust statements directly)")
+    print(f" Scanning in:  {src_dir}")
     print("============================================================\n")
 
     total_checked = 0
@@ -371,21 +495,21 @@ def main():
 
     rust_files = sorted(src_dir.rglob("*.rs"))
     for r_file in rust_files:
-        eqs = scan_file_for_equations(r_file)
+        eqs = extract_equations_from_rust_file(r_file, mode=mode)
         if not eqs:
             continue
 
         rel_path = r_file.relative_to(root_dir)
-        for line_num, lhs, rhs in eqs:
+        for line_num, lhs, rhs, src_type in eqs:
             total_checked += 1
             ok, msg = verify_equation(lhs, rhs)
             if ok:
                 successes.append((rel_path, line_num, lhs, rhs))
-                print(f"  ✓ {rel_path}:{line_num}")
+                print(f"  ✓ {rel_path}:{line_num} [{src_type}]")
                 print(f"      {lhs} = {rhs}")
             else:
                 failures.append((rel_path, line_num, lhs, rhs, msg))
-                print(f"  ✗ {rel_path}:{line_num}")
+                print(f"  ✗ {rel_path}:{line_num} [{src_type}]")
                 print(f"      {lhs} = {rhs}")
                 print(f"      ERROR: {msg}")
 
@@ -396,17 +520,13 @@ def main():
     print("------------------------------------------------------------")
 
     if failures:
-        print("\nFAILURES SUMMARY:")
+        print("\nFAILURES / REAL ANOMALIES SUMMARY:")
         for rel_path, line_num, lhs, rhs, msg in failures:
             print(f"\n[{rel_path}:{line_num}] {lhs} = {rhs}")
             print(f"  {msg}")
         sys.exit(1)
     else:
-        if total_checked == 0:
-            print("\nNote: No annotated equations found yet.")
-            print("Annotate calculation formulas with: // @eq: <lhs> = <rhs>")
-        else:
-            print("\nAll annotated equations verified successfully with 100% dimensional and scale balance!")
+        print("\nAll scanned equations verified successfully with 100% dimensional and scale balance!")
         sys.exit(0)
 
 

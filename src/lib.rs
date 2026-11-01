@@ -21,6 +21,7 @@ mod economy;
 use economy::Economy;
 mod stakeholders;
 use stakeholders::Stakeholders;
+pub mod equations;
 
 #[cfg(test)]
 #[macro_use]
@@ -141,7 +142,7 @@ impl Calculator{
         };
         self.ems_total__k__to_coe_per_a.set_year_values(year, &ems_total);
 
-        let feed_in_ems_avoided = self.energy.feed_in_ems_avoided__k__to_coe_per_a.get_year(year);
+        let feed_in_ems_avoided = self.energy.results.feed_in_ems_avoided__k__to_coe_per_a.get_year(year);
         let net_co2_balance = ems_total.sum() - feed_in_ems_avoided;
         self.net_co2_balance__k__to_coe_per_a.set_year_value(year, net_co2_balance);
     }
@@ -223,6 +224,19 @@ impl Calculator{
     /// Returns the ids of all results.
     pub fn list_result_ids(&self) -> Vec<String> {
         self.get_results_list().iter().map(|&a| a.id.clone()).collect()
+    }
+
+    /// Returns the equation metadata (formula string, description, sector) for a given result ID.
+    pub fn get_equation_metadata(&self, result_id: &str) -> Result<JsValue, JsError> {
+        match equations::get_equation_metadata(result_id) {
+            Some(meta) => Ok(to_value(meta)?),
+            None => Err(JsError::new(&format!("Equation metadata not found for ID: '{result_id}'"))),
+        }
+    }
+
+    /// Returns the complete list of equation metadata across all sectors.
+    pub fn list_equations(&self) -> Result<JsValue, JsError> {
+        Ok(to_value(equations::list_equations())?)
     }
 
     fn get_results_by_id(&mut self, id: &str) -> Option<&mut Results> {
@@ -528,6 +542,16 @@ mod unit_tests{
         assert!(!calculator.get_results_by_id("buildings/results/floor_A__k__m2/private").is_none());
         assert!(!calculator.get_results_by_id("economy/results/invest_heating_material__M__eur_per_a").is_none());
         assert!(!calculator.get_results_by_id("stakeholders/results/private_invest__M__eur_per_a").is_none());
+    }
+
+    #[test]
+    fn test_equation_metadata_registry() {
+        let calculator = Calculator::new(2022, 2025);
+        assert!(calculator.get_equation_metadata("total_heat_dmd__G__W_h_per_a").is_ok());
+        assert!(calculator.get_equation_metadata("buildings/results/floor_A__k__m2").is_ok());
+        assert!(calculator.get_equation_metadata("non_existent_equation").is_err());
+        assert!(calculator.list_equations().is_ok());
+        assert!(equations::list_equations().len() >= 4);
     }
 
     #[test]

@@ -26,6 +26,7 @@ sys.path.insert(0, str(ROOT_DIR / "scripts"))
 from verify_units import (
     verify_equation,
     parse_var_name_units,
+    extract_equations_from_rust_file,
     UNIT_DEFINITIONS,
     SI_PREFIXES,
     UnitQuantity,
@@ -228,63 +229,52 @@ def get_physical_dimension_label(var_name: str) -> str:
     return ", ".join(dims_labels)
 
 
-def extract_equations_from_file(file_path: Path) -> List[Tuple[int, str, str, str]]:
+import json
+import subprocess
+
+
+def load_equations_from_wasm_or_rust() -> List[Dict[str, str]]:
     """
-    Extracts all equations from a source file:
-    - First priority: explicit `// @eq:` comments.
-    - Second priority: direct Rust `let <var> = <expr>;` assignments.
-    Returns: list of (line_num, lhs, rhs, source_type)
+    Loads equation metadata directly from the Wasm / Rust single source of truth.
+    Eliminates regex scraping of raw source calculation files.
     """
-    content = file_path.read_text(encoding='utf-8')
-    lines = content.splitlines()
-    eq_pattern = re.compile(r'^\s*///?\s*@(?:eq|equation):\s*([^=]+)=(.+)$')
-    annotated_vars = set()
-    equations = []
-
-    # 1. First pass: explicit @eq: annotations
-    for idx, line in enumerate(lines, 1):
-        m = eq_pattern.match(line)
-        if m:
-            lhs = m.group(1).strip()
-            rhs = m.group(2).strip()
-            equations.append((idx, lhs, rhs, 'Explicit Annotation'))
-            annotated_vars.add(lhs)
-
-    # 2. Second pass: Rust assignments (let <var> = <expr>;)
-    let_pattern = re.compile(r'let\s+(?:mut\s+)?([a-zA-Z0-9_]+)\s*=\s*([^;]+);', re.MULTILINE | re.DOTALL)
-    for m in let_pattern.finditer(content):
-        var = m.group(1)
-        if '__' not in var:
-            continue
-        if var in annotated_vars:
-            continue  # Covered by explicit @eq:
-        
-        raw_expr = m.group(2)
-        if not any(op in raw_expr for op in ['*', '/', '+', '-']):
-            continue
-        if '{' in raw_expr or '::new' in raw_expr:
-            continue
-
-        cleaned = clean_rust_expr(raw_expr)
-        if not cleaned or len(cleaned) < 3:
-            continue
-
-        line_num = content[:m.start()].count('\n') + 1
-        equations.append((line_num, var, cleaned, 'Rust Code Assignment'))
-
-    return equations
+    try:
+        cmd = [
+            "node", "-e",
+            "import('./pkg/climcalc_core.js').then(pkg => { const c = new pkg.Calculator(2022, 2030); console.log(JSON.stringify(c.list_equations())); })"
+        ]
+        out = subprocess.check_output(cmd, cwd=ROOT_DIR, text=True, stderr=subprocess.DEVNULL)
+        return json.loads(out)
+    except Exception:
+        # Fallback reading directly from src/equations.rs declarative macro
+        eq_file = ROOT_DIR / "src" / "equations.rs"
+        content = eq_file.read_text(encoding="utf-8")
+        pattern = re.compile(r'///([^\n]+)\n\s*([a-zA-Z0-9_]+)::([a-zA-Z0-9_]+)\s*=\s*([^;]+);')
+        results = []
+        for m in pattern.finditer(content):
+            results.append({
+                "description": m.group(1).strip(),
+                "sector": m.group(2).strip(),
+                "id": m.group(3).strip(),
+                "formula": " ".join(m.group(4).split()),
+            })
+        return results
 
 
 def generate_markdown(output_path: Path):
     """Generates the full equations documentation Markdown document."""
-    src_dir = ROOT_DIR / "src"
-    sectors = [
-        ("Buildings Sector", src_dir / "buildings" / "calculate.rs", "Space heating demand, hot water, boiler fuel consumption, energetic renovations, heat pump electricity demand, and building sector emissions."),
-        ("Energy & Renewables Sector", src_dir / "energy" / "calculate.rs", "Rooftop photovoltaics (PV), open-space ground-mounted solar, onshore wind generation, electricity grid mix procurement, and renewable feed-in."),
-        ("Mobility Sector", src_dir / "mobility" / "calculate.rs", "Vehicle fleet mileage, battery electric vehicle (BEV) power demand, combustion fuel consumption, street lighting infrastructure, and tailpipe emissions."),
-        ("Macroeconomics Sector", src_dir / "economy" / "calculate.rs", "Capital expenditure splits (material vs. labor), local vs. national turnover, full-time equivalent (FTE) jobs, municipal business taxes, and tax revenues."),
-        ("Stakeholders Sector", src_dir / "stakeholders" / "calculate.rs", "Net annual cash flows, financial effects of climate measures, and capital expenditure balances across Private, Industry, and Municipal stakeholders."),
+    sectors_config = [
+        ("buildings", "Buildings Sector", "src/buildings/calculate.rs", "Space heating demand, hot water, boiler fuel consumption, energetic renovations, heat pump electricity demand, and building sector emissions."),
+        ("energy", "Energy & Renewables Sector", "src/energy/calculate.rs", "Rooftop photovoltaics (PV), open-space ground-mounted solar, onshore wind generation, electricity grid mix procurement, and renewable feed-in."),
+        ("mobility", "Mobility Sector", "src/mobility/calculate.rs", "Vehicle fleet mileage, battery electric vehicle (BEV) power demand, combustion fuel consumption, street lighting infrastructure, and tailpipe emissions."),
+        ("economy", "Macroeconomics Sector", "src/economy/calculate.rs", "Capital expenditure splits (material vs. labor), local vs. national turnover, full-time equivalent (FTE) jobs, municipal business taxes, and tax revenues."),
+        ("stakeholders", "Stakeholders Sector", "src/stakeholders/calculate.rs", "Net annual cash flows, financial effects of climate measures, and capital expenditure balances across Private, Industry, and Municipal stakeholders."),
     ]
+
+    all_eqs = load_equations_from_wasm_or_rust()
+    eqs_by_sector: Dict[str, List[Dict[str, str]]] = {}
+    for eq in all_eqs:
+        eqs_by_sector.setdefault(eq['sector'].lower(), []).append(eq)
 
     lines = []
     lines.append("# Climonomic Engine — Mathematical & Physical Formulation Catalog\n")
@@ -292,6 +282,7 @@ def generate_markdown(output_path: Path):
     lines.append("## Overview\n")
     var_naming_rel = os.path.relpath(ROOT_DIR / "variables_naming_convention.md", output_path.parent)
     lines.append(f"Every variable in the Climonomic calculator encodes its physical unit and SI scale directly into its name using double underscores (`__`), as specified in [variables_naming_convention.md]({var_naming_rel}).")
+    lines.append("Equations are declared via declarative Rust macros (`src/equations.rs`) as a **single source of truth** and exposed directly through the WebAssembly API (`calc.get_equation_metadata(id)`).\n")
     lines.append("Each calculation is statically verified for:\n")
     lines.append("1. **Dimensional Consistency**: The physical dimensions of the resulting quantity must match the combined dimensions of the input arguments.")
     lines.append("2. **Scale Factor Balance**: Numeric factors in code ($K_{\\text{code}}$) must balance the SI prefixes of the variables according to the physical balance law:")
@@ -299,7 +290,7 @@ def generate_markdown(output_path: Path):
     lines.append("---\n")
     lines.append("## Table of Contents\n")
 
-    for title, _, _ in sectors:
+    for _, title, _, _ in sectors_config:
         anchor = title.lower().replace('&', '').replace(' ', '-').replace('--', '-')
         lines.append(f"- [{title}](#{anchor})")
     lines.append("\n---\n")
@@ -307,38 +298,42 @@ def generate_markdown(output_path: Path):
     total_eqs = 0
     total_verified = 0
 
-    for title, file_path, desc in sectors:
-        if not file_path.exists():
-            continue
-        
-        rel_path = file_path.relative_to(ROOT_DIR)
+    for sector_key, title, rel_src, desc in sectors_config:
+        file_path = ROOT_DIR / rel_src
         rel_to_doc = os.path.relpath(file_path, output_path.parent)
         lines.append(f"## {title}\n")
-        lines.append(f"**Source File:** [`{rel_path}`]({rel_to_doc})\n")
+        lines.append(f"**Source Implementation:** [`{rel_src}`]({rel_to_doc})\n")
         lines.append(f"*{desc}*\n")
 
-        eqs = extract_equations_from_file(file_path)
-        if not eqs:
-            lines.append("*No calculation equations found in this file.*\n")
+        sector_eqs = eqs_by_sector.get(sector_key, [])
+        if not sector_eqs:
+            lines.append("*No equations registered for this sector.*\n")
             continue
 
-        for line_num, lhs, rhs, source_type in eqs:
+        for eq in sector_eqs:
             total_eqs += 1
-            ok, v_msg = verify_equation(lhs, rhs)
+            lhs = eq['id']
+            rhs = eq['formula']
+            eq_desc = eq.get('description', '')
+            clean_rhs = clean_rust_expr(rhs)
+
+            ok, v_msg = verify_equation(lhs, clean_rhs)
             if ok:
                 total_verified += 1
                 status_badge = "✅ **Verified Physical Balance**"
             else:
                 status_badge = f"⚠️ **Discrepancy Note**: {v_msg}"
 
-            latex_block = expr_to_latex(lhs, rhs)
+            latex_block = expr_to_latex(lhs, clean_rhs)
             lhs_unit_latex = get_latex_unit(lhs)
             lhs_dim = get_physical_dimension_label(lhs)
 
             lines.append(f"### `{lhs}`\n")
-            lines.append(f"**Source:** Line {line_num} (`{source_type}`)\n")
+            if eq_desc:
+                lines.append(f"> **Description:** {eq_desc}\n")
+            lines.append(f"**Source:** Declarative Macro (`src/equations.rs` &rarr; Wasm API)\n")
             lines.append(f"$$\n{latex_block}\n$$\n")
-            lines.append(f"**Raw Code Expression:**\n```rust\n{lhs} = {rhs};\n```\n")
+            lines.append(f"**Formula Expression:**\n```rust\n{lhs} = {rhs};\n```\n")
             lines.append(f"**Verification Status:** {status_badge}\n")
 
             # Table of variables
@@ -347,7 +342,7 @@ def generate_markdown(output_path: Path):
             lines.append("| :--- | :--- | :--- | :--- | :--- |")
             lines.append(f"| `{lhs}` | **LHS (Result)** | `{lhs.split('__', 1)[-1] if '__' in lhs else 'none'}` | ${lhs_unit_latex}$ | {lhs_dim} |")
 
-            rhs_vars = extract_variables_from_expr(rhs)
+            rhs_vars = extract_variables_from_expr(clean_rhs)
             for r_var in rhs_vars:
                 r_unit = get_latex_unit(r_var)
                 r_dim = get_physical_dimension_label(r_var)

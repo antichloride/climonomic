@@ -72,6 +72,8 @@ macro_rules! implement_results_energy {
             $(
                 pub $field: SectorsResult,
             )*
+            pub feed_in_total__G__W_h_per_a: Results,
+            pub feed_in_ems_avoided__k__to_coe_per_a: Results,
         }
 
         impl ResultsEnergy {
@@ -80,6 +82,16 @@ macro_rules! implement_results_energy {
                     $(
                         $field: SectorsResult::new(id.to_owned() + "/" + stringify!($field), start_year, end_year),
                     )*
+                    feed_in_total__G__W_h_per_a: Results::new(
+                        id.to_owned() + "/feed_in_total__G__W_h_per_a",
+                        start_year,
+                        end_year,
+                    ),
+                    feed_in_ems_avoided__k__to_coe_per_a: Results::new(
+                        id.to_owned() + "/feed_in_ems_avoided__k__to_coe_per_a",
+                        start_year,
+                        end_year,
+                    ),
                 }
             }
 
@@ -88,6 +100,8 @@ macro_rules! implement_results_energy {
                 $(
                     results.extend(self.$field.get_results());
                 )*
+                results.push(&self.feed_in_total__G__W_h_per_a);
+                results.push(&self.feed_in_ems_avoided__k__to_coe_per_a);
                 results
             }
 
@@ -98,6 +112,8 @@ macro_rules! implement_results_energy {
                 };
 
                 match prefix {
+                    "feed_in_total__G__W_h_per_a" => Some(&mut self.feed_in_total__G__W_h_per_a),
+                    "feed_in_ems_avoided__k__to_coe_per_a" => Some(&mut self.feed_in_ems_avoided__k__to_coe_per_a),
                     $(
                         stringify!($field) => self.$field.get_results_by_id(remaining_id),
                     )*
