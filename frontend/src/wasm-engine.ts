@@ -73,6 +73,383 @@ export async function ensureWasmLoaded(): Promise<void> {
   }
 }
 
+export interface MeasureIntervention {
+  id: string;
+  inputId: string;
+  startYear: number;
+  endYear: number;
+  delta: number;
+}
+
+interface SimRunResults {
+  emsPriv: number[];
+  emsGhd: number[];
+  emsKom: number[];
+  emsTerritorial: number[];
+  feedInAvoided: number[];
+  totalCO2: number[];
+  privInvest: number[];
+  indInvest: number[];
+  comInvest: number[];
+  totalInvestPerYear: number[];
+  totalInvestSum: number;
+  privInvestSum: number;
+  indInvestSum: number;
+  comInvestSum: number;
+  privEff: number[];
+  indEff: number[];
+  comEff: number[];
+  totalEffPerYear: number[];
+  totalEffSum: number;
+  privEffSum: number;
+  indEffSum: number;
+  comEffSum: number;
+  comTax: number[];
+  comTaxSum: number;
+  jobsSeries: number[];
+  turnoverSeries: number[];
+  turnoverSum: number;
+  solOsNrgTotal: number[];
+  windNrgTotal: number[];
+  greenNrgTotal: number[];
+}
+
+export const MEASURE_DEFINITIONS: Record<
+  string,
+  {
+    id: string;
+    name: string;
+    getInterventions: (
+      s: CityBaseline,
+      b: Record<string, number>,
+      startYear: number,
+      endYear: number
+    ) => MeasureIntervention[];
+  }
+> = {
+  heatDmd: {
+    id: 'heatDmd',
+    name: 'Heizbedarf senken',
+    getInterventions: (s, _b, startYear, endYear) => {
+      const list: MeasureIntervention[] = [];
+      const m = s.measures.heatDmd;
+      const basePriv = 114;
+      const baseGhd = 96;
+      const baseKom = 96;
+
+      const dPriv = Math.max(0, basePriv - m.targetPrivate);
+      const dGhd = Math.max(0, baseGhd - m.targetGHD);
+      const dKom = Math.max(0, baseKom - m.targetKommune);
+
+      if (dPriv > 0)
+        list.push({
+          id: 'm_hd_priv',
+          inputId: 'buildings/inputs/heat_dmd__k__W_h_per_m2_a/private',
+          startYear,
+          endYear,
+          delta: dPriv,
+        });
+      if (dGhd > 0)
+        list.push({
+          id: 'm_hd_ghd',
+          inputId: 'buildings/inputs/heat_dmd__k__W_h_per_m2_a/industry',
+          startYear,
+          endYear,
+          delta: dGhd,
+        });
+      if (dKom > 0) {
+        list.push({
+          id: 'm_hd_sch',
+          inputId: 'buildings/inputs/heat_dmd__k__W_h_per_m2_a/schools',
+          startYear,
+          endYear,
+          delta: dKom,
+        });
+        list.push({
+          id: 'm_hd_pub',
+          inputId: 'buildings/inputs/heat_dmd__k__W_h_per_m2_a/public',
+          startYear,
+          endYear,
+          delta: dKom,
+        });
+      }
+      return list;
+    },
+  },
+  gasPhaseout: {
+    id: 'gasPhaseout',
+    name: 'Gasheizungen ersetzen',
+    getInterventions: (s, b, startYear, endYear) => {
+      const list: MeasureIntervention[] = [];
+      const m = s.measures.gasPhaseout;
+      const basePriv = b['buildings/inputs/A_heat_gas__k__m2/private'] || 540;
+      const baseGhd = b['buildings/inputs/A_heat_gas__k__m2/industry'] || 90;
+      const baseKom = b['buildings/inputs/A_heat_gas__k__m2/public'] || 0.9;
+
+      const dPriv = Math.max(0, basePriv - m.targetPrivate);
+      const dGhd = Math.max(0, baseGhd - m.targetGHD);
+      const dKom = Math.max(0, baseKom - m.targetKommune);
+
+      if (dPriv > 0)
+        list.push({
+          id: 'm_gas_priv',
+          inputId: 'buildings/inputs/A_heat_gas__k__m2/private',
+          startYear,
+          endYear,
+          delta: dPriv,
+        });
+      if (dGhd > 0)
+        list.push({
+          id: 'm_gas_ghd',
+          inputId: 'buildings/inputs/A_heat_gas__k__m2/industry',
+          startYear,
+          endYear,
+          delta: dGhd,
+        });
+      if (dKom > 0)
+        list.push({
+          id: 'm_gas_pub',
+          inputId: 'buildings/inputs/A_heat_gas__k__m2/public',
+          startYear,
+          endYear,
+          delta: dKom,
+        });
+      return list;
+    },
+  },
+  oilPhaseout: {
+    id: 'oilPhaseout',
+    name: 'Ölheizungen ersetzen',
+    getInterventions: (s, b, startYear, endYear) => {
+      const list: MeasureIntervention[] = [];
+      const m = s.measures.oilPhaseout;
+      const basePriv = b['buildings/inputs/A_heat_oil__k__m2/private'] || 1080;
+      const baseGhd = b['buildings/inputs/A_heat_oil__k__m2/industry'] || 180;
+      const baseKom = b['buildings/inputs/A_heat_oil__k__m2/public'] || 1.8;
+
+      const dPriv = Math.max(0, basePriv - m.targetPrivate);
+      const dGhd = Math.max(0, baseGhd - m.targetGHD);
+      const dKom = Math.max(0, baseKom - m.targetKommune);
+
+      if (dPriv > 0)
+        list.push({
+          id: 'm_oil_priv',
+          inputId: 'buildings/inputs/A_heat_oil__k__m2/private',
+          startYear,
+          endYear,
+          delta: dPriv,
+        });
+      if (dGhd > 0)
+        list.push({
+          id: 'm_oil_ghd',
+          inputId: 'buildings/inputs/A_heat_oil__k__m2/industry',
+          startYear,
+          endYear,
+          delta: dGhd,
+        });
+      if (dKom > 0)
+        list.push({
+          id: 'm_oil_pub',
+          inputId: 'buildings/inputs/A_heat_oil__k__m2/public',
+          startYear,
+          endYear,
+          delta: dKom,
+        });
+      return list;
+    },
+  },
+  pvRoof: {
+    id: 'pvRoof',
+    name: 'PV-Dach ausbauen',
+    getInterventions: (s, b, startYear, endYear) => {
+      const list: MeasureIntervention[] = [];
+      const m = s.measures.pvRoof;
+      const basePriv = b['energy/inputs/sol_rf_installed__M__Wp/private'] || 4.67;
+      const baseGhd = b['energy/inputs/sol_rf_installed__M__Wp/industry'] || 0.47;
+      const baseKom = b['energy/inputs/sol_rf_installed__M__Wp/public'] || 0.12;
+
+      const dPriv = m.targetPrivate - basePriv;
+      const dGhd = m.targetGHD - baseGhd;
+      const dKom = m.targetKommune - baseKom;
+
+      if (dPriv > 0)
+        list.push({
+          id: 'm_pvr_priv',
+          inputId: 'energy/inputs/sol_rf_installed__M__Wp/private',
+          startYear,
+          endYear,
+          delta: -dPriv,
+        });
+      if (dGhd > 0)
+        list.push({
+          id: 'm_pvr_ghd',
+          inputId: 'energy/inputs/sol_rf_installed__M__Wp/industry',
+          startYear,
+          endYear,
+          delta: -dGhd,
+        });
+      if (dKom > 0)
+        list.push({
+          id: 'm_pvr_pub',
+          inputId: 'energy/inputs/sol_rf_installed__M__Wp/public',
+          startYear,
+          endYear,
+          delta: -dKom,
+        });
+      return list;
+    },
+  },
+  pvOpen: {
+    id: 'pvOpen',
+    name: 'PV-Freifläche ausbauen',
+    getInterventions: (s, b, startYear, endYear) => {
+      const list: MeasureIntervention[] = [];
+      const m = s.measures.pvOpen;
+      const baseGhd = b['energy/inputs/sol_os_installed_A__ha/industry'] || 10;
+      const baseKom = b['energy/inputs/sol_os_installed_A__ha/public'] || 5;
+
+      const dGhd = m.targetGHD - baseGhd;
+      const dKom = m.targetKommune - baseKom;
+
+      if (dGhd > 0)
+        list.push({
+          id: 'm_pvo_ghd',
+          inputId: 'energy/inputs/sol_os_installed_A__ha/industry',
+          startYear,
+          endYear,
+          delta: -dGhd,
+        });
+      if (dKom > 0)
+        list.push({
+          id: 'm_pvo_pub',
+          inputId: 'energy/inputs/sol_os_installed_A__ha/public',
+          startYear,
+          endYear,
+          delta: -dKom,
+        });
+      return list;
+    },
+  },
+  wind: {
+    id: 'wind',
+    name: 'Windenergie ausbauen',
+    getInterventions: (s, b, startYear, endYear) => {
+      const list: MeasureIntervention[] = [];
+      const m = s.measures.wind;
+      const baseGhd = b['energy/inputs/wind_installed_A__ha/industry'] || 0;
+      const baseKom = b['energy/inputs/wind_installed_A__ha/public'] || 0;
+
+      const dGhd = m.targetGHD - baseGhd;
+      const dKom = m.targetKommune - baseKom;
+
+      if (dGhd > 0)
+        list.push({
+          id: 'm_wnd_ghd',
+          inputId: 'energy/inputs/wind_installed_A__ha/industry',
+          startYear,
+          endYear,
+          delta: -dGhd,
+        });
+      if (dKom > 0)
+        list.push({
+          id: 'm_wnd_pub',
+          inputId: 'energy/inputs/wind_installed_A__ha/public',
+          startYear,
+          endYear,
+          delta: -dKom,
+        });
+      return list;
+    },
+  },
+  greenPower: {
+    id: 'greenPower',
+    name: 'Zukauf erneuerbare Energien erhöhen',
+    getInterventions: (s, b, startYear, endYear) => {
+      const list: MeasureIntervention[] = [];
+      const m = s.measures.greenPower;
+      const basePriv =
+        b['energy/inputs/prchsd_renewable_nrg__G__W_h_per_a/private'] || 4.67;
+      const baseGhd =
+        b['energy/inputs/prchsd_renewable_nrg__G__W_h_per_a/industry'] || 0.47;
+      const baseKom =
+        b['energy/inputs/prchsd_renewable_nrg__G__W_h_per_a/public'] || 0.12;
+
+      const dPriv = m.targetPrivate - basePriv;
+      const dGhd = m.targetGHD - baseGhd;
+      const dKom = m.targetKommune - baseKom;
+
+      if (dPriv > 0)
+        list.push({
+          id: 'm_gp_priv',
+          inputId:
+            'energy/inputs/prchsd_renewable_nrg__G__W_h_per_a/private',
+          startYear,
+          endYear,
+          delta: -dPriv,
+        });
+      if (dGhd > 0)
+        list.push({
+          id: 'm_gp_ghd',
+          inputId:
+            'energy/inputs/prchsd_renewable_nrg__G__W_h_per_a/industry',
+          startYear,
+          endYear,
+          delta: -dGhd,
+        });
+      if (dKom > 0)
+        list.push({
+          id: 'm_gp_pub',
+          inputId: 'energy/inputs/prchsd_renewable_nrg__G__W_h_per_a/public',
+          startYear,
+          endYear,
+          delta: -dKom,
+        });
+      return list;
+    },
+  },
+  evCars: {
+    id: 'evCars',
+    name: 'PKW mit E-Autos ersetzen',
+    getInterventions: (s, b, startYear, endYear) => {
+      const list: MeasureIntervention[] = [];
+      const m = s.measures.evCars;
+      const basePriv = b['mobility/inputs/n_bev__k__/private'] || 0;
+      const baseGhd = b['mobility/inputs/n_bev__k__/industry'] || 0;
+      const baseKom = b['mobility/inputs/n_bev__k__/public'] || 0;
+
+      const dPriv = m.targetPrivate - basePriv;
+      const dGhd = m.targetGHD - baseGhd;
+      const dKom = m.targetKommune - baseKom;
+
+      if (dPriv > 0)
+        list.push({
+          id: 'm_ev_priv',
+          inputId: 'mobility/inputs/n_bev__k__/private',
+          startYear,
+          endYear,
+          delta: -dPriv,
+        });
+      if (dGhd > 0)
+        list.push({
+          id: 'm_ev_ghd',
+          inputId: 'mobility/inputs/n_bev__k__/industry',
+          startYear,
+          endYear,
+          delta: -dGhd,
+        });
+      if (dKom > 0)
+        list.push({
+          id: 'm_ev_pub',
+          inputId: 'mobility/inputs/n_bev__k__/public',
+          startYear,
+          endYear,
+          delta: -dKom,
+        });
+      return list;
+    },
+  },
+};
+
 export function runSimulation(state: CityBaseline): SimulationOutput {
   const startYear = state.startYear;
   const endYear = Math.max(state.endYear, 2045);
@@ -81,9 +458,7 @@ export function runSimulation(state: CityBaseline): SimulationOutput {
     years.push(y);
   }
   const nYears = years.length;
-
-  // Initialize v5 WebAssembly Calculator
-  const calc = new Calculator(startYear, endYear);
+  const endIdx = Math.min(nYears - 1, Math.max(0, state.endYear - startYear));
 
   // 1. Build Fuel Price Trajectories if escalation is set
   const escRate = state.fossilEscalation / 100;
@@ -122,240 +497,209 @@ export function runSimulation(state: CityBaseline): SimulationOutput {
         val = getBaselineValueForId(id, state.population);
       }
     }
-
     baselineValues[id] = val;
+  }
 
-    // Apply to calculator
-    if (
-      escRate > 0 &&
-      !state.expertOverrides?.[id] &&
-      (id === 'buildings/inputs/price_oil__eur_per_L' ||
-        id === 'buildings/inputs/price_gas__eur_per_m3' ||
-        id === 'mobility/inputs/price_fuel__eur_per_L')
-    ) {
-      const traj =
-        id === 'buildings/inputs/price_oil__eur_per_L'
-          ? oilPrices
-          : id === 'buildings/inputs/price_gas__eur_per_m3'
-          ? gasPrices
-          : petrolPrices;
-      try {
-        calc.set_input_values(id, traj);
-      } catch (err) {
-        calc.set_input(id, val);
+  // Helper to create and initialize a Calculator instance
+  const createCalculator = (): Calculator => {
+    const calc = new Calculator(startYear, endYear);
+    for (const [id, val] of Object.entries(baselineValues)) {
+      if (
+        escRate > 0 &&
+        !state.expertOverrides?.[id] &&
+        (id === 'buildings/inputs/price_oil__eur_per_L' ||
+          id === 'buildings/inputs/price_gas__eur_per_m3' ||
+          id === 'mobility/inputs/price_fuel__eur_per_L')
+      ) {
+        const traj =
+          id === 'buildings/inputs/price_oil__eur_per_L'
+            ? oilPrices
+            : id === 'buildings/inputs/price_gas__eur_per_m3'
+            ? gasPrices
+            : petrolPrices;
+        try {
+          calc.set_input_values(id, traj);
+        } catch {
+          calc.set_input(id, val);
+        }
+      } else {
+        try {
+          calc.set_input(id, val);
+        } catch {
+          // Safe fallback
+        }
       }
-    } else {
-      try {
-        calc.set_input(id, val);
-      } catch (e) {
-        // Safe fallback
-      }
     }
-  }
-
-  // 3. Register Interventions (Measures) into v5 Calculator
-  const measuresList: Array<{
-    id: string;
-    inputId: string;
-    startYear: number;
-    endYear: number;
-    delta: number;
-  }> = [];
-
-  const m = state.measures;
-  const mEnd = state.endYear;
-
-  // Measure 1: Heat Demand Reduction (Sanierung)
-  if (m.heatDmd.enabled) {
-    const basePriv = baselineValues['buildings/inputs/heat_dmd__k__W_h_per_m2_a/private'] || 50;
-    const baseGhd = baselineValues['buildings/inputs/heat_dmd__k__W_h_per_m2_a/industry'] || 50;
-    const baseKom = baselineValues['buildings/inputs/heat_dmd__k__W_h_per_m2_a/public'] || 50;
-
-    const dPriv = Math.max(0, basePriv - m.heatDmd.targetPrivate);
-    const dGhd = Math.max(0, baseGhd - m.heatDmd.targetGHD);
-    const dKom = Math.max(0, baseKom - m.heatDmd.targetKommune);
-
-    if (dPriv > 0) measuresList.push({ id: 'm_hd_priv', inputId: 'buildings/inputs/heat_dmd__k__W_h_per_m2_a/private', startYear, endYear: mEnd, delta: dPriv });
-    if (dGhd > 0) measuresList.push({ id: 'm_hd_ghd', inputId: 'buildings/inputs/heat_dmd__k__W_h_per_m2_a/industry', startYear, endYear: mEnd, delta: dGhd });
-    if (dKom > 0) {
-      measuresList.push({ id: 'm_hd_sch', inputId: 'buildings/inputs/heat_dmd__k__W_h_per_m2_a/schools', startYear, endYear: mEnd, delta: dKom });
-      measuresList.push({ id: 'm_hd_pub', inputId: 'buildings/inputs/heat_dmd__k__W_h_per_m2_a/public', startYear, endYear: mEnd, delta: dKom });
-    }
-  }
-
-  // Measure 2: Gas Phaseout
-  if (m.gasPhaseout.enabled) {
-    const basePriv = baselineValues['buildings/inputs/A_heat_gas__k__m2/private'] || 540;
-    const baseGhd = baselineValues['buildings/inputs/A_heat_gas__k__m2/industry'] || 90;
-    const baseKom = baselineValues['buildings/inputs/A_heat_gas__k__m2/public'] || 0.9;
-
-    const dPriv = Math.max(0, basePriv - m.gasPhaseout.targetPrivate);
-    const dGhd = Math.max(0, baseGhd - m.gasPhaseout.targetGHD);
-    const dKom = Math.max(0, baseKom - m.gasPhaseout.targetKommune);
-
-    if (dPriv > 0) measuresList.push({ id: 'm_gas_priv', inputId: 'buildings/inputs/A_heat_gas__k__m2/private', startYear, endYear: mEnd, delta: dPriv });
-    if (dGhd > 0) measuresList.push({ id: 'm_gas_ghd', inputId: 'buildings/inputs/A_heat_gas__k__m2/industry', startYear, endYear: mEnd, delta: dGhd });
-    if (dKom > 0) measuresList.push({ id: 'm_gas_pub', inputId: 'buildings/inputs/A_heat_gas__k__m2/public', startYear, endYear: mEnd, delta: dKom });
-  }
-
-  // Measure 3: Oil Phaseout
-  if (m.oilPhaseout.enabled) {
-    const basePriv = baselineValues['buildings/inputs/A_heat_oil__k__m2/private'] || 1080;
-    const baseGhd = baselineValues['buildings/inputs/A_heat_oil__k__m2/industry'] || 180;
-    const baseKom = baselineValues['buildings/inputs/A_heat_oil__k__m2/public'] || 1.8;
-
-    const dPriv = Math.max(0, basePriv - m.oilPhaseout.targetPrivate);
-    const dGhd = Math.max(0, baseGhd - m.oilPhaseout.targetGHD);
-    const dKom = Math.max(0, baseKom - m.oilPhaseout.targetKommune);
-
-    if (dPriv > 0) measuresList.push({ id: 'm_oil_priv', inputId: 'buildings/inputs/A_heat_oil__k__m2/private', startYear, endYear: mEnd, delta: dPriv });
-    if (dGhd > 0) measuresList.push({ id: 'm_oil_ghd', inputId: 'buildings/inputs/A_heat_oil__k__m2/industry', startYear, endYear: mEnd, delta: dGhd });
-    if (dKom > 0) measuresList.push({ id: 'm_oil_pub', inputId: 'buildings/inputs/A_heat_oil__k__m2/public', startYear, endYear: mEnd, delta: dKom });
-  }
-
-  // Measure 4: PV Roof Expansion
-  if (m.pvRoof.enabled) {
-    const basePriv = baselineValues['energy/inputs/sol_rf_installed__M__Wp/private'] || 4.67;
-    const baseGhd = baselineValues['energy/inputs/sol_rf_installed__M__Wp/industry'] || 0.47;
-    const baseKom = baselineValues['energy/inputs/sol_rf_installed__M__Wp/public'] || 0.12;
-
-    const dPriv = m.pvRoof.targetPrivate - basePriv;
-    const dGhd = m.pvRoof.targetGHD - baseGhd;
-    const dKom = m.pvRoof.targetKommune - baseKom;
-
-    if (dPriv > 0) measuresList.push({ id: 'm_pvr_priv', inputId: 'energy/inputs/sol_rf_installed__M__Wp/private', startYear, endYear: mEnd, delta: -dPriv });
-    if (dGhd > 0) measuresList.push({ id: 'm_pvr_ghd', inputId: 'energy/inputs/sol_rf_installed__M__Wp/industry', startYear, endYear: mEnd, delta: -dGhd });
-    if (dKom > 0) measuresList.push({ id: 'm_pvr_pub', inputId: 'energy/inputs/sol_rf_installed__M__Wp/public', startYear, endYear: mEnd, delta: -dKom });
-  }
-
-  // Measure 5: PV Open Space Expansion
-  if (m.pvOpen.enabled) {
-    const baseGhd = baselineValues['energy/inputs/sol_os_installed_A__ha/industry'] || 10;
-    const baseKom = baselineValues['energy/inputs/sol_os_installed_A__ha/public'] || 5;
-
-    const dGhd = m.pvOpen.targetGHD - baseGhd;
-    const dKom = m.pvOpen.targetKommune - baseKom;
-
-    if (dGhd > 0) measuresList.push({ id: 'm_pvo_ghd', inputId: 'energy/inputs/sol_os_installed_A__ha/industry', startYear, endYear: mEnd, delta: -dGhd });
-    if (dKom > 0) measuresList.push({ id: 'm_pvo_pub', inputId: 'energy/inputs/sol_os_installed_A__ha/public', startYear, endYear: mEnd, delta: -dKom });
-  }
-
-  // Measure 6: Wind Energy Expansion
-  if (m.wind.enabled) {
-    const baseGhd = baselineValues['energy/inputs/wind_installed_A__ha/industry'] || 0;
-    const baseKom = baselineValues['energy/inputs/wind_installed_A__ha/public'] || 0;
-
-    const dGhd = m.wind.targetGHD - baseGhd;
-    const dKom = m.wind.targetKommune - baseKom;
-
-    if (dGhd > 0) measuresList.push({ id: 'm_wnd_ghd', inputId: 'energy/inputs/wind_installed_A__ha/industry', startYear, endYear: mEnd, delta: -dGhd });
-    if (dKom > 0) measuresList.push({ id: 'm_wnd_pub', inputId: 'energy/inputs/wind_installed_A__ha/public', startYear, endYear: mEnd, delta: -dKom });
-  }
-
-  // Measure 7: Green Power Purchase
-  if (m.greenPower.enabled) {
-    const basePriv = baselineValues['energy/inputs/prchsd_renewable_nrg__G__W_h_per_a/private'] || 4.67;
-    const baseGhd = baselineValues['energy/inputs/prchsd_renewable_nrg__G__W_h_per_a/industry'] || 0.47;
-    const baseKom = baselineValues['energy/inputs/prchsd_renewable_nrg__G__W_h_per_a/public'] || 0.12;
-
-    const dPriv = m.greenPower.targetPrivate - basePriv;
-    const dGhd = m.greenPower.targetGHD - baseGhd;
-    const dKom = m.greenPower.targetKommune - baseKom;
-
-    if (dPriv > 0) measuresList.push({ id: 'm_gp_priv', inputId: 'energy/inputs/prchsd_renewable_nrg__G__W_h_per_a/private', startYear, endYear: mEnd, delta: -dPriv });
-    if (dGhd > 0) measuresList.push({ id: 'm_gp_ghd', inputId: 'energy/inputs/prchsd_renewable_nrg__G__W_h_per_a/industry', startYear, endYear: mEnd, delta: -dGhd });
-    if (dKom > 0) measuresList.push({ id: 'm_gp_pub', inputId: 'energy/inputs/prchsd_renewable_nrg__G__W_h_per_a/public', startYear, endYear: mEnd, delta: -dKom });
-  }
-
-  // Measure 8: BEV Fleet Expansion
-  if (m.evCars.enabled) {
-    const basePriv = baselineValues['mobility/inputs/n_bev__k__/private'] || 0;
-    const baseGhd = baselineValues['mobility/inputs/n_bev__k__/industry'] || 0;
-    const baseKom = baselineValues['mobility/inputs/n_bev__k__/public'] || 0;
-
-    const dPriv = m.evCars.targetPrivate - basePriv;
-    const dGhd = m.evCars.targetGHD - baseGhd;
-    const dKom = m.evCars.targetKommune - baseKom;
-
-    if (dPriv > 0) measuresList.push({ id: 'm_ev_priv', inputId: 'mobility/inputs/n_bev__k__/private', startYear, endYear: mEnd, delta: -dPriv });
-    if (dGhd > 0) measuresList.push({ id: 'm_ev_ghd', inputId: 'mobility/inputs/n_bev__k__/industry', startYear, endYear: mEnd, delta: -dGhd });
-    if (dKom > 0) measuresList.push({ id: 'm_ev_pub', inputId: 'mobility/inputs/n_bev__k__/public', startYear, endYear: mEnd, delta: -dKom });
-  }
-
-  if (measuresList.length > 0) {
-    try {
-      calc.add_measures(measuresList);
-    } catch (e) {
-      console.warn('Could not register measures:', e);
-    }
-  }
-
-  // 4. Calculate simulation over all years
-  calc.calculate_over_years();
-
-  // Helper to extract result array
-  const getRes = (id: string): number[] => {
-    try {
-      const arr = calc.get_results(id);
-      return Array.from(arr);
-    } catch (e) {
-      return new Array(nYears).fill(0);
-    }
+    return calc;
   };
 
-  // 5. Extract Results Trajectories from v5 Engine
-  const emsPriv = getRes('emissions/results/ems_total__k__to_coe_per_a/private');
-  const emsGhd = getRes('emissions/results/ems_total__k__to_coe_per_a/industry');
-  const emsKom = getRes('emissions/results/ems_total__k__to_coe_per_a/public');
+  // Helper to execute a simulation run and extract all result series
+  const executeRun = (measures: MeasureIntervention[]): SimRunResults => {
+    const calc = createCalculator();
+    if (measures.length > 0) {
+      try {
+        calc.add_measures(measures);
+      } catch (e) {
+        console.warn('Could not register measures:', e);
+      }
+    }
+    calc.calculate_over_years();
 
-  const currentCO2: number[] = [];
-  const baselineCO2: number[] = [];
+    const getRes = (id: string): number[] => {
+      try {
+        const arr = calc.get_results(id);
+        return Array.from(arr);
+      } catch {
+        return new Array(nYears).fill(0);
+      }
+    };
 
-  const startCO2Total = Math.max(1, (emsPriv[0] || 0) + (emsGhd[0] || 0) + (emsKom[0] || 0));
+    const emsPriv = getRes('emissions/results/ems_total__k__to_coe_per_a/private');
+    const emsGhd = getRes('emissions/results/ems_total__k__to_coe_per_a/industry');
+    const emsKom = getRes('emissions/results/ems_total__k__to_coe_per_a/public');
+    const feedInAvoided = getRes('energy/results/feed_in_ems_avoided__k__to_coe_per_a');
 
-  for (let idx = 0; idx < nYears; idx++) {
-    const yrTotal = (emsPriv[idx] || 0) + (emsGhd[idx] || 0) + (emsKom[idx] || 0);
-    currentCO2.push(yrTotal);
-    baselineCO2.push(startCO2Total);
+    const emsTerritorial = years.map(
+      (_, i) => (emsPriv[i] || 0) + (emsGhd[i] || 0) + (emsKom[i] || 0)
+    );
+    const totalCO2 = years.map(
+      (_, i) => emsTerritorial[i] - (feedInAvoided[i] || 0) / 1000.0
+    );
+
+    const privInvest = getRes('stakeholders/results/private_invest__M__eur_per_a').map(Math.abs);
+    const indInvest = getRes('stakeholders/results/industry_invest__M__eur_per_a').map(Math.abs);
+    const comInvest = getRes('stakeholders/results/community_invest__M__eur_per_a').map(Math.abs);
+    const totalInvestPerYear = years.map(
+      (_, i) => (privInvest[i] || 0) + (indInvest[i] || 0) + (comInvest[i] || 0)
+    );
+
+    const sumPeriod = (arr: number[]) => {
+      let s = 0;
+      for (let i = 0; i <= endIdx; i++) s += arr[i] || 0;
+      return s;
+    };
+
+    const privInvestSum = sumPeriod(privInvest);
+    const indInvestSum = sumPeriod(indInvest);
+    const comInvestSum = sumPeriod(comInvest);
+    const totalInvestSum = sumPeriod(totalInvestPerYear);
+
+    const privEff = getRes('stakeholders/results/private_effect_of_measures__M__eur_per_a').map(Math.abs);
+    const indEff = getRes('stakeholders/results/industry_effect_of_measures__M__eur_per_a').map(Math.abs);
+    const comEff = getRes('stakeholders/results/community_effect_of_measures__M__eur_per_a').map(Math.abs);
+    const totalEffPerYear = years.map(
+      (_, i) => (privEff[i] || 0) + (indEff[i] || 0) + (comEff[i] || 0)
+    );
+
+    const privEffSum = sumPeriod(privEff);
+    const indEffSum = sumPeriod(indEff);
+    const comEffSum = sumPeriod(comEff);
+    const totalEffSum = sumPeriod(totalEffPerYear);
+
+    const comTax = getRes('stakeholders/results/community_tax_income_from_measures__M__eur_per_a').map(Math.abs);
+    const comTaxSum = sumPeriod(comTax);
+
+    const jobsSeries = getRes('economy/results/n_jobs_crafting_local');
+    const turnoverSeries = getRes('economy/results/turnover_local__M__eur_per_a');
+    const turnoverSum = sumPeriod(turnoverSeries);
+
+    const solOsNrgPriv = getRes('energy/results/sol_os_nrg__G__W_h_per_a/private');
+    const solOsNrgInd = getRes('energy/results/sol_os_nrg__G__W_h_per_a/industry');
+    const solOsNrgPub = getRes('energy/results/sol_os_nrg__G__W_h_per_a/public');
+    const solOsNrgTotal = years.map(
+      (_, i) => (solOsNrgPriv[i] || 0) + (solOsNrgInd[i] || 0) + (solOsNrgPub[i] || 0)
+    );
+
+    const windNrgInd = getRes('energy/results/wind_nrg__G__W_h_per_a/industry');
+    const windNrgPub = getRes('energy/results/wind_nrg__G__W_h_per_a/public');
+    const windNrgTotal = years.map(
+      (_, i) => (windNrgInd[i] || 0) + (windNrgPub[i] || 0)
+    );
+
+    const greenNrgPriv = getRes('energy/results/prchsd_renewable_nrg__G__W_h_per_a/private');
+    const greenNrgInd = getRes('energy/results/prchsd_renewable_nrg__G__W_h_per_a/industry');
+    const greenNrgPub = getRes('energy/results/prchsd_renewable_nrg__G__W_h_per_a/public');
+    const greenNrgTotal = years.map(
+      (_, i) => (greenNrgPriv[i] || 0) + (greenNrgInd[i] || 0) + (greenNrgPub[i] || 0)
+    );
+
+    return {
+      emsPriv,
+      emsGhd,
+      emsKom,
+      emsTerritorial,
+      feedInAvoided,
+      totalCO2,
+      privInvest,
+      indInvest,
+      comInvest,
+      totalInvestPerYear,
+      totalInvestSum,
+      privInvestSum,
+      indInvestSum,
+      comInvestSum,
+      privEff,
+      indEff,
+      comEff,
+      totalEffPerYear,
+      totalEffSum,
+      privEffSum,
+      indEffSum,
+      comEffSum,
+      comTax,
+      comTaxSum,
+      jobsSeries,
+      turnoverSeries,
+      turnoverSum,
+      solOsNrgTotal,
+      windNrgTotal,
+      greenNrgTotal,
+    };
+  };
+
+  // 3. Counterfactual Baseline Run (0 measures)
+  const runBaseline = executeRun([]);
+
+  // 4. Collect Active Interventions
+  const measureKeys = Object.keys(MEASURE_DEFINITIONS);
+  const activeKeys = measureKeys.filter(
+    k => (state.measures as any)[k]?.enabled
+  );
+
+  const activeInterventionsMap: Record<string, MeasureIntervention[]> = {};
+  const allActiveInterventions: MeasureIntervention[] = [];
+
+  for (const k of activeKeys) {
+    const list = MEASURE_DEFINITIONS[k].getInterventions(
+      state,
+      baselineValues,
+      startYear,
+      state.endYear
+    );
+    activeInterventionsMap[k] = list;
+    allActiveInterventions.push(...list);
   }
 
-  const endIdx = Math.min(nYears - 1, Math.max(0, state.endYear - startYear));
-  const endCO2 = currentCO2[endIdx] ?? currentCO2[currentCO2.length - 1];
-  const co2ReductionTsdTonnes = Math.max(0, startCO2Total - endCO2);
+  // 5. Active Package Run (all active measures together)
+  const runActive =
+    allActiveInterventions.length === 0
+      ? runBaseline
+      : executeRun(allActiveInterventions);
+
+  const startCO2Total = Math.max(1, runBaseline.totalCO2[0]);
+  const endCO2Baseline = runBaseline.totalCO2[endIdx] ?? runBaseline.totalCO2[runBaseline.totalCO2.length - 1];
+  const endCO2Active = runActive.totalCO2[endIdx] ?? runActive.totalCO2[runActive.totalCO2.length - 1];
+  const co2ReductionTsdTonnes = Math.max(0, endCO2Baseline - endCO2Active);
   const overallReductionPct = (co2ReductionTsdTonnes / startCO2Total) * 100;
 
-  // Stakeholder & Economic Results
-  const privInvest = getRes('stakeholders/results/private_invest__M__eur_per_a').map(Math.abs);
-  const indInvest = getRes('stakeholders/results/industry_invest__M__eur_per_a').map(Math.abs);
-  const comInvest = getRes('stakeholders/results/community_invest__M__eur_per_a').map(Math.abs);
-
-  const privEff = getRes('stakeholders/results/private_effect_of_measures__M__eur_per_a').map(Math.abs);
-  const indEff = getRes('stakeholders/results/industry_effect_of_measures__M__eur_per_a').map(Math.abs);
-  const comEff = getRes('stakeholders/results/community_effect_of_measures__M__eur_per_a').map(Math.abs);
-  const comTax = getRes('stakeholders/results/community_tax_income_from_measures__M__eur_per_a').map(Math.abs);
-
-  const jobsSeries = getRes('economy/results/n_jobs_crafting_local');
-  const turnoverSeries = getRes('economy/results/turnover_local__M__eur_per_a');
-
-  const sumPeriod = (arr: number[]) => {
-    let s = 0;
-    for (let i = 0; i <= endIdx; i++) s += arr[i] || 0;
-    return s;
-  };
-
-  const privInvestSum = sumPeriod(privInvest);
-  const indInvestSum = sumPeriod(indInvest);
-  const comInvestSum = sumPeriod(comInvest);
-  const totalInvestMio = privInvestSum + indInvestSum + comInvestSum || (354 * (state.population / 50000));
-
-  const privEffSum = sumPeriod(privEff);
-  const indEffSum = sumPeriod(indEff);
-  const comEffSum = sumPeriod(comEff);
-  const directEffectsMio = privEffSum + indEffSum + comEffSum || (740 * (state.population / 50000));
-
-  const indirectEffectsMio = sumPeriod(comTax) || (28 * (state.population / 50000));
-  const localTurnoverMio = sumPeriod(turnoverSeries) || (142 * (state.population / 50000));
-  const localJobs = Math.round(Math.max(...jobsSeries.slice(0, endIdx + 1)) || (43 * (state.population / 50000)));
+  const totalInvestMio = runActive.totalInvestSum || 354 * (state.population / 50000);
+  const directEffectsMio = runActive.totalEffSum || 740 * (state.population / 50000);
+  const indirectEffectsMio = runActive.comTaxSum || 28 * (state.population / 50000);
+  const localTurnoverMio = runActive.turnoverSum || 142 * (state.population / 50000);
+  const localJobs = Math.round(
+    Math.max(...runActive.jobsSeries.slice(0, endIdx + 1)) ||
+      43 * (state.population / 50000)
+  );
 
   // Trajectories for graphs
   const investmentsPerYear: number[] = [];
@@ -363,9 +707,9 @@ export function runSimulation(state: CityBaseline): SimulationOutput {
   const jobsPerYear: number[] = [];
 
   for (let i = 0; i < nYears; i++) {
-    const inv = (privInvest[i] || 0) + (indInvest[i] || 0) + (comInvest[i] || 0);
-    const sav = (privEff[i] || 0) + (indEff[i] || 0) + (comEff[i] || 0);
-    const j = Math.round(jobsSeries[i] || 0);
+    const inv = runActive.totalInvestPerYear[i] || 0;
+    const sav = runActive.totalEffPerYear[i] || 0;
+    const j = Math.round(runActive.jobsSeries[i] || 0);
 
     investmentsPerYear.push(inv > 0 ? inv : totalInvestMio / (endIdx + 1));
     savingsPerYear.push(sav);
@@ -373,8 +717,6 @@ export function runSimulation(state: CityBaseline): SimulationOutput {
   }
 
   // Sector breakdown scorecards
-  const popScale = state.population / 50000;
-
   const allKpi: SectorResults = {
     investTotalMio: totalInvestMio,
     co2ReductionPercent: overallReductionPct,
@@ -386,130 +728,221 @@ export function runSimulation(state: CityBaseline): SimulationOutput {
   };
 
   const privateKpi: SectorResults = {
-    investTotalMio: privInvestSum || totalInvestMio * 0.62,
+    investTotalMio: runActive.privInvestSum || totalInvestMio * 0.62,
     co2ReductionPercent: overallReductionPct * 0.98,
-    co2ReductionTsdTonnes: co2ReductionTsdTonnes * 0.60,
-    directEffectsMio: privEffSum || directEffectsMio * 0.64,
-    indirectEffectsMio: indirectEffectsMio * 0.20,
+    co2ReductionTsdTonnes: co2ReductionTsdTonnes * 0.6,
+    directEffectsMio: runActive.privEffSum || directEffectsMio * 0.64,
+    indirectEffectsMio: indirectEffectsMio * 0.2,
     localTurnoverMio: 0,
     localJobs: 0,
   };
 
   const ghdKpi: SectorResults = {
-    investTotalMio: indInvestSum || totalInvestMio * 0.32,
+    investTotalMio: runActive.indInvestSum || totalInvestMio * 0.32,
     co2ReductionPercent: overallReductionPct * 1.05,
     co2ReductionTsdTonnes: co2ReductionTsdTonnes * 0.35,
-    directEffectsMio: indEffSum || directEffectsMio * 0.32,
+    directEffectsMio: runActive.indEffSum || directEffectsMio * 0.32,
     indirectEffectsMio: indirectEffectsMio * 0.65,
     localTurnoverMio: 0,
     localJobs: 0,
   };
 
   const kommuneKpi: SectorResults = {
-    investTotalMio: comInvestSum || totalInvestMio * 0.06,
+    investTotalMio: runActive.comInvestSum || totalInvestMio * 0.06,
     co2ReductionPercent: overallReductionPct * 1.02,
     co2ReductionTsdTonnes: co2ReductionTsdTonnes * 0.05,
-    directEffectsMio: comEffSum || directEffectsMio * 0.04,
+    directEffectsMio: runActive.comEffSum || directEffectsMio * 0.04,
     indirectEffectsMio: indirectEffectsMio * 0.15,
     localTurnoverMio: 0,
     localJobs: 0,
   };
 
-  // Measure pills & Top measures calculation
-  const measureMetrics: Record<string, MeasurePillMetric> = {
-    evCars: {
-      id: 'evCars',
-      name: 'PKW mit E-Autos ersetzen',
-      co2ReductionPct: 37.3,
-      co2ReductionTsdTo: 68.8 * popScale,
-      investMio: 0.0,
-      costPerTonCO2: 466.3,
-      directEffectMioYear: 32.1 * popScale,
-      breakEvenYear: '—',
-      roiPct: 0,
-    },
-    greenPower: {
-      id: 'greenPower',
-      name: 'Zukauf erneuerbare Energien erhöhen',
-      co2ReductionPct: 36.4,
-      co2ReductionTsdTo: 67.0 * popScale,
-      investMio: 0.0,
-      costPerTonCO2: 4.0,
-      directEffectMioYear: 0.27 * popScale,
-      breakEvenYear: '—',
-      roiPct: 0,
-    },
-    gasPhaseout: {
-      id: 'gasPhaseout',
-      name: 'Gasheizungen ersetzen',
-      co2ReductionPct: 14.9,
-      co2ReductionTsdTo: 27.4 * popScale,
-      investMio: 143.2 * popScale,
-      costPerTonCO2: 345.7,
-      directEffectMioYear: 14.2 * popScale,
-      breakEvenYear: '2043',
-      roiPct: 9.9,
-    },
-    oilPhaseout: {
-      id: 'oilPhaseout',
-      name: 'Ölheizungen ersetzen',
-      co2ReductionPct: 13.5,
-      co2ReductionTsdTo: 25.0 * popScale,
-      investMio: 65.8 * popScale,
-      costPerTonCO2: 207.4,
-      directEffectMioYear: 7.4 * popScale,
-      breakEvenYear: '2041',
-      roiPct: 11.2,
-    },
-    heatDmd: {
-      id: 'heatDmd',
-      name: 'Heizbedarf senken',
-      co2ReductionPct: 7.4,
-      co2ReductionTsdTo: 13.6 * popScale,
-      investMio: 134.0 * popScale,
-      costPerTonCO2: 167.9,
-      directEffectMioYear: 6.8 * popScale,
-      breakEvenYear: '—',
-      roiPct: 5.0,
-    },
-    wind: {
-      id: 'wind',
-      name: 'Windenergie ausbauen',
-      co2ReductionPct: 3.0,
-      co2ReductionTsdTo: 5.5 * popScale,
-      investMio: 8.5 * popScale,
-      costPerTonCO2: 122.0,
-      directEffectMioYear: 1.1 * popScale,
-      breakEvenYear: '2038',
-      roiPct: 7.5,
-    },
-    pvRoof: {
-      id: 'pvRoof',
-      name: 'PV-Dach ausbauen',
-      co2ReductionPct: 2.0,
-      co2ReductionTsdTo: 3.8 * popScale,
-      investMio: 17.6 * popScale,
-      costPerTonCO2: 145.0,
-      directEffectMioYear: 1.25 * popScale,
-      breakEvenYear: '2037',
-      roiPct: 6.2,
-    },
-    pvOpen: {
-      id: 'pvOpen',
-      name: 'PV-Freifläche ausbauen',
-      co2ReductionPct: 1.9,
-      co2ReductionTsdTo: 3.4 * popScale,
-      investMio: 6.1 * popScale,
-      costPerTonCO2: 110.0,
-      directEffectMioYear: 0.8 * popScale,
-      breakEvenYear: '2036',
-      roiPct: 8.0,
-    },
-  };
+  // 6. Marginal Counterfactual Attribution for Each Measure
+  const measureMetrics: Record<string, MeasurePillMetric> = {};
 
-  const topMeasures = Object.values(measureMetrics).sort(
-    (a, b) => b.co2ReductionPct - a.co2ReductionPct
-  );
+  for (const key of measureKeys) {
+    const def = MEASURE_DEFINITIONS[key];
+    const isEnabled = (state.measures as any)[key]?.enabled;
+
+    if (!isEnabled) {
+      measureMetrics[key] = {
+        id: key,
+        name: def.name,
+        co2ReductionPct: 0,
+        co2ReductionTsdTo: 0,
+        investMio: 0,
+        costPerTonCO2: 0,
+        directEffectMioYear: 0,
+        breakEvenYear: '—',
+        roiPct: 0,
+      };
+      continue;
+    }
+
+    // Leave-one-out: run simulation with all active measures EXCEPT this one
+    let runWithout: SimRunResults;
+    if (activeKeys.length === 1) {
+      runWithout = runBaseline;
+    } else {
+      const withoutInterventions: MeasureIntervention[] = [];
+      for (const otherKey of activeKeys) {
+        if (otherKey !== key) {
+          withoutInterventions.push(...activeInterventionsMap[otherKey]);
+        }
+      }
+      runWithout = executeRun(withoutInterventions);
+    }
+
+    // Marginal CO2 reduction:
+    let extraAvoidedCO2 = 0;
+    if (key === 'pvOpen') {
+      extraAvoidedCO2 =
+        Math.max(
+          0,
+          runActive.solOsNrgTotal[endIdx] - runWithout.solOsNrgTotal[endIdx]
+        ) * 0.401;
+    } else if (key === 'wind') {
+      extraAvoidedCO2 =
+        Math.max(
+          0,
+          runActive.windNrgTotal[endIdx] - runWithout.windNrgTotal[endIdx]
+        ) * 0.401;
+    } else if (key === 'greenPower') {
+      extraAvoidedCO2 =
+        Math.max(
+          0,
+          runActive.greenNrgTotal[endIdx] - runWithout.greenNrgTotal[endIdx]
+        ) * 0.401;
+    }
+
+    const co2DiffDirect = Math.max(
+      0,
+      runWithout.totalCO2[endIdx] - runActive.totalCO2[endIdx]
+    );
+    const co2ReductionTsdTo = co2DiffDirect + extraAvoidedCO2;
+    const co2ReductionPct = (co2ReductionTsdTo / startCO2Total) * 100;
+
+    // Cumulative CO2 reduction across period
+    let cumCO2Reduction = 0;
+    for (let i = 0; i <= endIdx; i++) {
+      let extraAvoidedY = 0;
+      if (key === 'pvOpen') {
+        extraAvoidedY =
+          Math.max(
+            0,
+            runActive.solOsNrgTotal[i] - runWithout.solOsNrgTotal[i]
+          ) * 0.401;
+      } else if (key === 'wind') {
+        extraAvoidedY =
+          Math.max(
+            0,
+            runActive.windNrgTotal[i] - runWithout.windNrgTotal[i]
+          ) * 0.401;
+      } else if (key === 'greenPower') {
+        extraAvoidedY =
+          Math.max(
+            0,
+            runActive.greenNrgTotal[i] - runWithout.greenNrgTotal[i]
+          ) * 0.401;
+      }
+      cumCO2Reduction +=
+        Math.max(0, runWithout.totalCO2[i] - runActive.totalCO2[i]) +
+        extraAvoidedY;
+    }
+
+    // CapEx difference:
+    const rawInvestDiff = Math.max(
+      0,
+      runActive.totalInvestSum - runWithout.totalInvestSum
+    );
+    const investMio = rawInvestDiff > 1000 ? rawInvestDiff / 1000 : rawInvestDiff;
+
+    // Direct operational recurring savings achieved per year in target year:
+    const directEffectMioYear = Math.max(
+      0,
+      runActive.totalEffPerYear[endIdx] - runWithout.totalEffPerYear[endIdx]
+    );
+
+    // Abatement cost in € / t CO2:
+    let costPerTonCO2 = 0;
+    if (cumCO2Reduction > 0) {
+      if (investMio > 0) {
+        costPerTonCO2 = (investMio * 1000) / cumCO2Reduction;
+      } else {
+        const cumEffDiff = Math.max(
+          0,
+          runActive.totalEffSum - runWithout.totalEffSum
+        );
+        costPerTonCO2 =
+          cumEffDiff > 0 ? (cumEffDiff * 1000) / cumCO2Reduction : 0;
+      }
+    }
+
+    // ROI %:
+    const roiPct = investMio > 0 ? (directEffectMioYear / investMio) * 100 : 0;
+
+    // Break-even amortization year:
+    let breakEvenYear = '—';
+    if (investMio > 0 && directEffectMioYear > 0) {
+      let cumSav = 0;
+      for (let i = 0; i < nYears; i++) {
+        cumSav += Math.max(
+          0,
+          (runActive.totalEffPerYear[i] || 0) -
+            (runWithout.totalEffPerYear[i] || 0)
+        );
+        if (cumSav >= investMio) {
+          breakEvenYear = String(years[i]);
+          break;
+        }
+      }
+    }
+
+    measureMetrics[key] = {
+      id: key,
+      name: def.name,
+      co2ReductionPct,
+      co2ReductionTsdTo,
+      investMio,
+      costPerTonCO2,
+      directEffectMioYear,
+      breakEvenYear,
+      roiPct,
+    };
+  }
+
+  // Fallback defaults for UI pill slots that might check other keys
+  if (!measureMetrics.transitShare) {
+    measureMetrics.transitShare = {
+      id: 'transitShare',
+      name: 'ÖPNV-Anteil ausbauen',
+      co2ReductionPct: 0,
+      co2ReductionTsdTo: 0,
+      investMio: 0,
+      costPerTonCO2: 0,
+      directEffectMioYear: 0,
+      breakEvenYear: '—',
+      roiPct: 0,
+    };
+  }
+  if (!measureMetrics.bikeShare) {
+    measureMetrics.bikeShare = {
+      id: 'bikeShare',
+      name: 'Radverkehrsanteil ausbauen',
+      co2ReductionPct: 0,
+      co2ReductionTsdTo: 0,
+      investMio: 0,
+      costPerTonCO2: 0,
+      directEffectMioYear: 0,
+      breakEvenYear: '—',
+      roiPct: 0,
+    };
+  }
+
+  // Sort top measures descending by dynamic CO2 reduction percentage
+  const topMeasures = Object.values(measureMetrics)
+    .filter(m => m.co2ReductionPct > 0 || (state.measures as any)[m.id]?.enabled)
+    .sort((a, b) => b.co2ReductionPct - a.co2ReductionPct);
 
   return {
     startYear,
@@ -523,8 +956,8 @@ export function runSimulation(state: CityBaseline): SimulationOutput {
     },
     co2Trajectory: {
       years,
-      baseline: baselineCO2,
-      current: currentCO2,
+      baseline: runBaseline.totalCO2,
+      current: runActive.totalCO2,
     },
     costsTrajectory: {
       years,
