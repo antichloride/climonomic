@@ -1,3 +1,5 @@
+#![allow(non_snake_case)]
+
 use wasm_bindgen::prelude::*;
 use serde_wasm_bindgen::to_value;
 use serde::{Serialize, Deserialize};
@@ -13,6 +15,7 @@ mod result;
 use result::Results;
 use input::Input;
 mod sectors;
+use sectors::{SectorsResult, SectorsRawValues};
 mod constants;
 mod economy;
 use economy::Economy;
@@ -30,6 +33,8 @@ pub struct Calculator {
     pub(crate) energy: Energy,
     pub(crate) economy: Economy,
     pub(crate) stakeholders: Stakeholders,
+    pub(crate) ems_total__k__to_coe_per_a: SectorsResult,
+    pub(crate) net_co2_balance__k__to_coe_per_a: Results,
     pub start_year: u32,
     pub end_year: u32,
 }
@@ -57,6 +62,16 @@ impl Calculator{
             energy: Energy::new(start_year, end_year),
             economy: Economy::new(start_year, end_year),
             stakeholders: Stakeholders::new(start_year, end_year),
+            ems_total__k__to_coe_per_a: SectorsResult::new(
+                "emissions/results/ems_total__k__to_coe_per_a".to_owned(),
+                start_year,
+                end_year,
+            ),
+            net_co2_balance__k__to_coe_per_a: Results::new(
+                "emissions/results/net_co2_balance__k__to_coe_per_a".to_owned(),
+                start_year,
+                end_year,
+            ),
             start_year,
             end_year,
         }
@@ -112,6 +127,23 @@ impl Calculator{
         self.energy.calculate_emissions(year);
         self.buildings.calculate_emissions(year);
         self.mobility.calculate_emissions(year);
+
+        let ems_oil = self.buildings.ems_oil__k__to_coe_per_a().get_year(year);
+        let ems_gas = self.buildings.ems_gas__k__to_coe_per_a().get_year(year);
+        let prchsd_nrg_mix_ems = self.energy.prchsd_nrg_mix_ems__k__to_coe_per_a().get_year(year);
+        let cars_ems = self.mobility.cars_ems__k__to_coe_per_a().get_year(year);
+
+        let ems_total = SectorsRawValues {
+            private: ems_oil.private + ems_gas.private + prchsd_nrg_mix_ems.private + cars_ems.private,
+            industry: ems_oil.industry + ems_gas.industry + prchsd_nrg_mix_ems.industry + cars_ems.industry,
+            schools: ems_oil.schools + ems_gas.schools + prchsd_nrg_mix_ems.schools + cars_ems.schools,
+            public: ems_oil.public + ems_gas.public + prchsd_nrg_mix_ems.public + cars_ems.public,
+        };
+        self.ems_total__k__to_coe_per_a.set_year_values(year, &ems_total);
+
+        let feed_in_ems_avoided = self.energy.feed_in_ems_avoided__k__to_coe_per_a.get_year(year);
+        let net_co2_balance = ems_total.sum() - feed_in_ems_avoided;
+        self.net_co2_balance__k__to_coe_per_a.set_year_value(year, net_co2_balance);
     }
 
     fn get_inputs(&self) -> Vec<&Input> {
@@ -183,6 +215,8 @@ impl Calculator{
         list.extend(self.energy.get_results());
         list.extend(self.economy.get_results());
         list.extend(self.stakeholders.get_results());
+        list.extend(self.ems_total__k__to_coe_per_a.get_results());
+        list.push(&self.net_co2_balance__k__to_coe_per_a);
         return list;
     }
 
@@ -201,6 +235,17 @@ impl Calculator{
             "energy" => self.energy.get_results_by_id(remaining_id),
             "economy" => self.economy.get_results_by_id(remaining_id),
             "stakeholders" => self.stakeholders.get_results_by_id(remaining_id),
+            "emissions" => {
+                let (res_type, remaining) = match remaining_id.split_once('/') {
+                    Some((p, r)) => (p, r),
+                    None => (remaining_id, ""),
+                };
+                match res_type {
+                    "ems_total__k__to_coe_per_a" => self.ems_total__k__to_coe_per_a.get_results_by_id(remaining),
+                    "net_co2_balance__k__to_coe_per_a" => Some(&mut self.net_co2_balance__k__to_coe_per_a),
+                    _ => None,
+                }
+            }
             _ => None,
         }
     }

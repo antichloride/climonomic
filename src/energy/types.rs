@@ -134,9 +134,17 @@ implement_results_energy! {
     wind_turnover_buyback__M__eur_per_a,
     wind_revenue__M__eur_per_a,
     prchsd_renewable_nrg__M__eur_per_a,
+    prchsd_renewable_nrg_price__eur_per_kWh,
     elec_nrg_dmd__G__W_h_per_a,
     prchsd_nrg_mix__G__W_h_per_a,
+    prchsd_nrg_mix_price__eur_per_kWh,
     prchsd_nrg_mix_costs__M__eur_per_a,
     prchsd_nrg_mix_ems__k__to_coe_per_a,
-    nrg_own_mix_price__m__eur_per_W_h
+    nrg_own_mix_price__m__eur_per_W_h,
+    sol_rf_installed__M__Wp,
+    sol_rf_self_cnsmp_part,
+    sol_rf_costs__M__eur_per_a,
+    sol_rf_costs__eur_per_kWh,
+    sol_os_installed_A__ha,
+    sol_os_profit__M__eur_per_a
 }

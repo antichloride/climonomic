@@ -40,6 +40,7 @@ macro_rules! implement_stakeholders {
                     $(
                         stringify!($field) => Some(&mut self.$field),
                     )*
+                    "industry_profit" => Some(&mut self.industry_profit_from_measures),
                     _ => None,
                 }
             }

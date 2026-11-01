@@ -165,27 +165,33 @@ macro_rules! implement_results_buildings{
                         stringify!($field)
                             => self.$field.get_results_by_id(remaining_id),
                      )*
+                    "costs_other__M__eur" => self.costs_other__M__eur_per_a.get_results_by_id(remaining_id),
+                    "costs_total_heating__M__eur" => self.costs_total__M__eur.get_results_by_id(remaining_id),
                     _ => None,
-
                 }
-
             }
         }
-
-
     }
 }
 
 implement_results_buildings!{
     floor_A__k__m2,
+    specific_heat_dmd__kWh_per_m2_a,
+    specific_hot_water_dmd__kWh_per_a,
     total_heat_dmd__G__W_h_per_a,
     elec_dmd__G__W_h_per_a,
+    A_heat_oil__k__m2,
+    A_heat_oil_condensing__k__m2,
+    A_heat_gas__k__m2,
+    A_heat_heat_pump__k__m2,
+    A_heat_other__k__m2,
     cnsmp_oil__G__W_h_per_a,
     cnsmp_oil_condensing__G__W_h_per_a,
     cnsmp_gas__G__W_h_per_a,
     cnsmp_district_heating__G__W_h_per_a,
     cnsmp_elec_heat_pump__G__W_h_per_a,
     cnsmp_other__G__W_h_per_a,
+    cnsmp_total_heat__G__W_h_per_a,
     cnsmp_oil__M__L_per_a,
     cnsmp_gas__M__m3_per_a,
     cnsmp_gas_district_heating__M__m3_per_a,
@@ -194,8 +200,10 @@ implement_results_buildings!{
     costs_client_district_heating__M__eur_per_a,
     invest_heat_sources__M__eur_per_a,
     invest_energetic_renovation__M__eur_per_a,
+    invest_total__M__eur_per_a,
     grant_heat_sources__M__eur_per_a,
     grant_energetic_renovation__M__eur_per_a,
+    grant_total__M__eur_per_a,
     costs_heat_pump__M__eur,
     costs_other__M__eur_per_a,
     costs_total__M__eur,

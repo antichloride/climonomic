@@ -40,6 +40,9 @@ macro_rules! implement_economy {
                     $(
                         stringify!($field) => Some(&mut self.$field),
                     )*
+                    "turnover_local_with_materials" => Some(&mut self.turnover_local),
+                    "trade_tax_local" => Some(&mut self.business_tax_local),
+                    "trade_tax_national" => Some(&mut self.business_tax_national),
                     _ => None,
                 }
             }
@@ -73,6 +76,7 @@ implement_economy! {
     n_jobs_crafting_local,
     n_jobs_crafting_national,
     n_jobs_production_national,
+    n_jobs_production_sum_national,
     income_local,
     income_national,
     income_tax_local,
@@ -85,5 +89,8 @@ implement_economy! {
     business_tax_local,
     business_tax_national,
     corporate_tax_national,
+    energy_tax_oil,
+    energy_tax_gas,
+    energy_tax_fuel,
     energy_tax_national
 }

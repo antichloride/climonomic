@@ -118,7 +118,8 @@ macro_rules! implement_inputs_mobility {
 implement_inputs_mobility! {
     n_inhabitants__k__,
     n_cars__k__,
-    n_bev__k__
+    n_bev__k__,
+    car_mileage_per_vehicle__k__km_per_a
 }
 
 macro_rules! implement_results_mobility {
@@ -203,6 +204,9 @@ macro_rules! implement_results_mobility {
 }
 
 implement_results_mobility! {
+    n_cars__k__,
+    n_bev__k__,
+    car_mileage__k__km_per_a,
     traveld_dist_car__M__m_per_a,
     cars_grant__M__eur_per_a,
     bev_elec_nrg_dmd__G__W_h_per_a,

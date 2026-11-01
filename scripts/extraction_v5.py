@@ -255,11 +255,15 @@ def extract_v5(excel_path: str, output_path: str):
                 "public_transport": float(val(26, "J", 0.10)),
                 "car": float(val(27, "J", 0.80))
             },
+            "modal_split_car": float(val(27, "J", 0.80)),
             "price_fuel__eur_per_L": float(val(23, "M", 1.7)),
+            "n_sl__k__": float(val(30, "B", 9.0)),
+            "nrg_cnsmp_per_sl__k__W_h_per_a": float(val(31, "B", 500.0)),
+            "om_costs_per_sl__eur_per_a": float(val(32, "B", 200.0)),
             "street_lighting": {
-                "n_sl__k__": float(val(30, "D", 9.0)),
-                "nrg_cnsmp_per_sl__k__W_h_per_a": float(val(31, "D", 500.0)),
-                "om_costs_per_sl__eur_per_a": float(val(32, "D", 200.0))
+                "n_sl__k__": float(val(30, "B", 9.0)),
+                "nrg_cnsmp_per_sl__k__W_h_per_a": float(val(31, "B", 500.0)),
+                "om_costs_per_sl__eur_per_a": float(val(32, "B", 200.0))
             },
             "vehicle_specs": {
                 "bev": {
@@ -507,7 +511,7 @@ def extract_v5(excel_path: str, output_path: str):
             "input_id": input_id,
             "sector": sector,
             "measure_type": m_type,
-            "start_year": 2022,
+            "start_year": 2023,
             "end_year": 2035,
             "delta": delta,
             "baseline_2022": float(d_val) if isinstance(d_val, (int, float)) else 0.0,

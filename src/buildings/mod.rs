@@ -68,6 +68,12 @@ impl Buildings {
     pub fn costs_gas__M__eur_per_a(&self) -> &SectorsResult {
         &self.results.costs_gas__M__eur_per_a
     }
+    pub fn ems_oil__k__to_coe_per_a(&self) -> &SectorsResult {
+        &self.results.ems_oil__k__to_coe_per_a
+    }
+    pub fn ems_gas__k__to_coe_per_a(&self) -> &SectorsResult {
+        &self.results.ems_gas__k__to_coe_per_a
+    }
 }
 
 #[cfg(test)]

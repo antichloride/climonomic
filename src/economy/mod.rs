@@ -30,6 +30,9 @@ impl Economy {
     pub fn corporate_tax_national__M__eur(&self) -> &Results {
         &self.corporate_tax_national
     }
+    pub fn energy_tax_national__M__eur(&self) -> &Results {
+        &self.energy_tax_national
+    }
 }
 
 #[cfg(test)]

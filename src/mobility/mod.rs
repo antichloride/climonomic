@@ -56,6 +56,12 @@ impl Mobility {
     pub fn cars_fuel_costs__M__eur_per_a(&self) -> &SectorsResult {
         &self.results.cars_fuel_costs__M__eur_per_a
     }
+    pub fn cars_grant__M__eur_per_a(&self) -> &SectorsResult {
+        &self.results.cars_grant__M__eur_per_a
+    }
+    pub fn cars_ems__k__to_coe_per_a(&self) -> &SectorsResult {
+        &self.results.cars_ems__k__to_coe_per_a
+    }
 }
 
 #[cfg(test)]
