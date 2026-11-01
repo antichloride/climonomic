@@ -33,6 +33,7 @@ impl Results{
         return self.values[(year-self.start_year) as usize];
     }
 
+    #[allow(dead_code)]
     pub fn sum_years(&self, start_year: u32, end_year: u32) -> f64{
         let start_idx = (start_year.saturating_sub(self.start_year)) as usize;
         let end_idx = ((end_year.saturating_sub(self.start_year) + 1) as usize).min(self.values.len());

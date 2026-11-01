@@ -43,6 +43,7 @@ impl Buildings {
 }
 
 // Getters for cross-sector calculations
+#[allow(dead_code)]
 impl Buildings {
     pub fn elec_dmd__G__W_h_per_a(&self) -> &SectorsResult {
         &self.results.elec_dmd__G__W_h_per_a

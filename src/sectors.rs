@@ -324,6 +324,7 @@ impl SectorsResult{
         };
     }
 
+    #[allow(dead_code)]
     pub fn sum_years(
         &self,
         start_year: u32,
@@ -365,6 +366,7 @@ impl SectorsResult{
 
 
 #[cfg(test)]
+#[allow(dead_code)]
 impl SectorsResult{
 
     pub fn get_year_values(&self, year: u32) -> [f64; 4]{
@@ -378,6 +380,7 @@ impl SectorsResult{
 }
 
 #[cfg(test)]
+#[allow(dead_code)]
 impl SectorsInputs{
 
     pub fn get_year_values(&self, year: u32) -> [f64; 4]{

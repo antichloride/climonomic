@@ -23,9 +23,7 @@ mod stakeholders;
 use stakeholders::Stakeholders;
 pub mod equations;
 
-#[cfg(test)]
-#[macro_use]
-extern crate approx;
+
 
 #[wasm_bindgen]
 pub struct Calculator {

@@ -43,6 +43,7 @@ impl Mobility {
 }
 
 // Getters for cross-sector calculations
+#[allow(dead_code)]
 impl Mobility {
     pub fn bev_elec_nrg_dmd__G__W_h_per_a(&self) -> &SectorsResult {
         &self.results.bev_elec_nrg_dmd__G__W_h_per_a

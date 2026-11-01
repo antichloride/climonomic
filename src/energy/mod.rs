@@ -41,16 +41,19 @@ impl Energy {
         self.results.get_results_by_id(id)
     }
 
+    #[allow(dead_code)]
     pub fn feed_in_total__G__W_h_per_a(&self) -> &Results {
         &self.results.feed_in_total__G__W_h_per_a
     }
 
+    #[allow(dead_code)]
     pub fn feed_in_ems_avoided__k__to_coe_per_a(&self) -> &Results {
         &self.results.feed_in_ems_avoided__k__to_coe_per_a
     }
 }
 
 // Getters for cross-sector calculations
+#[allow(dead_code)]
 impl Energy {
     pub fn nrg_own_mix_price__m__eur_per_W_h(&self) -> &SectorsResult {
         &self.results.nrg_own_mix_price__m__eur_per_W_h
