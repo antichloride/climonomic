@@ -134,6 +134,139 @@
   font-family: var(--k-font-numeric);
 }
 
+/* Individual Fossil Fuel Price Cards */
+.fossil-card-item {
+  background: var(--k-color-section-base);
+  border: 1px solid var(--k-color-section-border);
+  border-radius: var(--k-radius-md);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: border-color var(--k-transition-fast), box-shadow var(--k-transition-fast);
+}
+
+[data-theme="dark"] .fossil-card-item {
+  background: #101726;
+  border-color: #243048;
+}
+
+.fossil-card-item:hover {
+  border-color: rgba(99, 102, 241, 0.45);
+}
+
+.fossil-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.fossil-card-title {
+  font-size: var(--k-font-size-label);
+  font-weight: 700;
+  color: var(--k-color-text-title);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.fossil-card-unit {
+  font-size: var(--k-font-size-xs);
+  font-weight: 600;
+  color: var(--k-color-text-muted);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--k-color-section-border);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.fossil-item-esc {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fossil-esc-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: var(--k-font-size-xs);
+}
+
+.fossil-esc-label {
+  color: var(--k-color-text-muted);
+  font-weight: 500;
+}
+
+.fossil-esc-val {
+  color: var(--k-color-secondary-base);
+  font-weight: 700;
+  font-family: var(--k-font-numeric);
+}
+
+.fossil-preview-box {
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px solid rgba(99, 102, 241, 0.22);
+  border-radius: var(--k-radius-sm);
+  padding: 6px 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: var(--k-font-size-xs);
+  margin-top: 2px;
+}
+
+[data-theme="dark"] .fossil-preview-box {
+  background: rgba(99, 102, 241, 0.12);
+  border-color: rgba(99, 102, 241, 0.3);
+}
+
+.preview-target-text {
+  color: var(--k-color-text-muted);
+  font-size: 0.72rem;
+  font-weight: 500;
+}
+
+.preview-val-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.preview-price {
+  font-weight: 700;
+  color: var(--k-color-text-title);
+  font-family: var(--k-font-numeric);
+  font-size: 0.82rem;
+}
+
+.preview-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(249, 115, 22, 0.18);
+  color: var(--k-color-secondary-base);
+  font-family: var(--k-font-numeric);
+}
+
+.btn-fossil-quick {
+  background: transparent;
+  border: 1px solid var(--k-color-section-border);
+  color: var(--k-color-text-body);
+  font-size: var(--k-font-size-xs);
+  padding: 4px 10px;
+  border-radius: var(--k-radius-sm);
+  cursor: pointer;
+  transition: all var(--k-transition-fast);
+}
+
+.btn-fossil-quick:hover {
+  border-color: var(--k-color-primary-base);
+  color: var(--k-color-primary-base);
+  background: rgba(99, 102, 241, 0.08);
+}
+
 /* Measure Card Sliders */
 .measure-slider-box {
   background: var(--k-color-section-base);

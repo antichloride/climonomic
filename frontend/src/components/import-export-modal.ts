@@ -14,7 +14,7 @@ export function openImportExportModal(initialTab: 'export' | 'import' = 'export'
   const jsonStr = store.exportInputsJson(true);
 
   modal.innerHTML = `
-    <div class="modal-surface" style="max-width: 820px; width: 95%;">
+    <div class="modal-surface" style="max-width: 840px; width: 95%;">
       <div class="modal-header">
         <div>
           <div style="display: flex; align-items: center; gap: 10px;">
@@ -22,11 +22,11 @@ export function openImportExportModal(initialTab: 'export' | 'import' = 'export'
               Einstellungen Import / Export
             </h2>
             <span class="header-badge" style="background: var(--k-color-primary-surface); color: var(--k-color-primary-base); border-color: var(--k-color-primary-base);">
-              EXCEL-KOMPATIBEL
+              EXCEL & JSON
             </span>
           </div>
           <p style="font-size: var(--k-font-size-sm); color: var(--k-color-text-muted); margin-top: 4px;">
-            Datenaustausch im standardisierten Format des Excel-Extraktors (Gebäude, Mobilität, Energie & Wirtschaft).
+            Direkter Import von Excel-Dateien (.xlsx) über client-seitiges Python (Pyodide) oder Austausch als JSON.
           </p>
         </div>
         <button class="modal-close" id="btn-close-import-export" title="Schließen" aria-label="Schließen">✕</button>
@@ -38,7 +38,7 @@ export function openImportExportModal(initialTab: 'export' | 'import' = 'export'
           📤 Exportieren (JSON)
         </button>
         <button id="tab-btn-import" class="expert-tab-btn ${initialTab === 'import' ? 'active' : ''}" style="padding: 10px 16px; border-radius: 8px 8px 0 0;">
-          📥 Importieren (Excel-JSON)
+          📥 Importieren (Excel .xlsx / JSON)
         </button>
       </div>
 
@@ -69,31 +69,35 @@ export function openImportExportModal(initialTab: 'export' | 'import' = 'export'
         <!-- TAB 2: IMPORT -->
         <div id="tab-content-import" style="display: ${initialTab === 'import' ? 'block' : 'none'};">
           <p style="font-size: var(--k-font-size-sm); color: var(--k-color-text-muted); margin-bottom: 12px;">
-            Laden Sie eine JSON-Datei hoch oder fügen Sie den JSON-Inhalt ein, der mit <code>scripts/extraction_webfassung.py</code> aus der Excel-Arbeitsmappe generiert wurde.
+            Ziehen Sie eine originale <strong>Excel-Arbeitsmappe (.xlsx)</strong> oder eine <strong>JSON-Datei</strong> hierher. Excel-Dateien werden direkt im Browser mit dem originalen Python-Extraktor (<code>scripts/extraction_webfassung.py</code> via Pyodide) eingelesen.
           </p>
 
           <!-- Dropzone -->
           <div id="import-dropzone" style="border: 2px dashed var(--k-color-border-focus); border-radius: 10px; padding: 24px; text-align: center; background: var(--k-color-bg-base); cursor: pointer; transition: all 0.2s ease;">
-            <div style="font-size: 2rem; margin-bottom: 8px;">📁</div>
-            <div style="font-weight: 600; color: var(--k-color-text-title);">JSON-Datei hier ablegen oder klicken zum Auswählen</div>
-            <div style="font-size: var(--k-font-size-xs); color: var(--k-color-text-muted); margin-top: 4px;">Akzeptiert .json Einstellungsdateien</div>
-            <input type="file" id="import-file-input" accept=".json,application/json" style="display: none;" />
+            <div style="font-size: 2.2rem; margin-bottom: 8px;">📊 ➔ ⚡</div>
+            <div style="font-weight: 600; color: var(--k-color-text-title); font-size: 1.05rem;">
+              Excel-Datei (.xlsx) oder JSON-Datei hier ablegen
+            </div>
+            <div style="font-size: var(--k-font-size-xs); color: var(--k-color-text-muted); margin-top: 6px;">
+              Klicken zum Durchsuchen • Unterstützt <code>.xlsx</code> (automatische Python-Extraktion) und <code>.json</code>
+            </div>
+            <input type="file" id="import-file-input" accept=".xlsx,.xls,.json,application/json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" style="display: none;" />
           </div>
 
+          <div id="import-status-msg" style="display: none; margin-top: 12px; padding: 10px 14px; border-radius: 6px; font-size: var(--k-font-size-sm); transition: all 0.2s;"></div>
+
           <div style="margin: 16px 0 8px 0; text-align: center; color: var(--k-color-text-muted); font-size: var(--k-font-size-xs); font-weight: 600;">
-            — ODER JSON HIER DIREKT EINFÜGEN —
+            — ODER JSON HIER DIREKT EINFÜGEN / BEARBEITEN —
           </div>
 
           <textarea
             id="import-json-area"
-            rows="8"
+            rows="7"
             placeholder='Fügen Sie hier das JSON ein (z.B. { "buildings": { ... }, "mobility": { ... } } oder { "inputs": { ... } })'
             style="width: 100%; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 0.82rem; background: var(--k-color-bg-base); color: var(--k-color-text-body); border: 1px solid var(--k-color-border-subtle); border-radius: 8px; padding: 12px; resize: vertical;"
           ></textarea>
 
-          <div id="import-status-msg" style="display: none; margin-top: 12px; padding: 10px 14px; border-radius: 6px; font-size: var(--k-font-size-sm);"></div>
-
-          <div style="display: flex; gap: 12px; margin-top: 16px; justify-content: space-between; align-items: center;">
+          <div style="display: flex; gap: 12px; margin-top: 16px; justify-content: space-between; align-items: center; flex-wrap: wrap;">
             <button id="btn-load-defaults" class="btn-pill-divider" type="button" style="color: var(--k-color-text-muted); font-size: var(--k-font-size-xs);">
               ↺ Standardwerte aus Excel laden
             </button>
@@ -108,10 +112,10 @@ export function openImportExportModal(initialTab: 'export' | 'import' = 'export'
     </div>
   `;
 
-  modal.classList.add('show');
+  modal.classList.add('open');
 
   const closeModal = () => {
-    modal.classList.remove('show');
+    modal.classList.remove('open');
   };
 
   document.getElementById('btn-close-import-export')?.addEventListener('click', closeModal);
@@ -173,12 +177,22 @@ export function openImportExportModal(initialTab: 'export' | 'import' = 'export'
   const statusMsg = document.getElementById('import-status-msg');
   const importArea = document.getElementById('import-json-area') as HTMLTextAreaElement | null;
 
-  const showStatus = (text: string, isError = false) => {
+  const showStatus = (text: string, isError = false, isLoading = false) => {
     if (!statusMsg) return;
     statusMsg.style.display = 'block';
-    statusMsg.style.background = isError ? 'rgba(239, 68, 68, 0.12)' : 'rgba(16, 185, 129, 0.12)';
-    statusMsg.style.color = isError ? '#ef4444' : '#10b981';
-    statusMsg.style.border = `1px solid ${isError ? '#ef4444' : '#10b981'}`;
+    if (isError) {
+      statusMsg.style.background = 'rgba(239, 68, 68, 0.12)';
+      statusMsg.style.color = '#ef4444';
+      statusMsg.style.border = '1px solid #ef4444';
+    } else if (isLoading) {
+      statusMsg.style.background = 'rgba(59, 130, 246, 0.12)';
+      statusMsg.style.color = '#3b82f6';
+      statusMsg.style.border = '1px solid #3b82f6';
+    } else {
+      statusMsg.style.background = 'rgba(16, 185, 129, 0.12)';
+      statusMsg.style.color = '#10b981';
+      statusMsg.style.border = '1px solid #10b981';
+    }
     statusMsg.textContent = text;
   };
 
@@ -205,12 +219,42 @@ export function openImportExportModal(initialTab: 'export' | 'import' = 'export'
     if (file) handleFile(file);
   });
 
-  function handleFile(file: File) {
+  async function handleFile(file: File) {
+    const isExcel = file.name.endsWith('.xlsx') || file.name.endsWith('.xls');
+
+    if (isExcel) {
+      showStatus(`Initialisiere Python-Extraktor für "${file.name}"...`, false, true);
+      try {
+        const { extractFromExcelFile } = await import('../pyodide-extractor');
+        const res = await extractFromExcelFile(file, (progressText) => {
+          showStatus(progressText, false, true);
+        });
+
+        if (res.success && res.inputsJson) {
+          if (importArea) importArea.value = res.inputsJson;
+          const applyRes = store.importInputsJson(res.inputsJson);
+          if (applyRes.success) {
+            showStatus(`✓ Excel-Datei erfolgreich mit Python extrahiert: ${applyRes.message}`);
+            showToast(`✓ Excel-Datei "${file.name}" extrahiert & simuliert!`);
+            setTimeout(() => closeModal(), 1600);
+          } else {
+            showStatus(`Daten extrahiert, aber Import fehlgeschlagen: ${applyRes.message}`, true);
+          }
+        } else {
+          showStatus(`Fehler bei der Python-Extraktion: ${res.error || 'Unbekannter Fehler'}`, true);
+        }
+      } catch (err: any) {
+        showStatus(`Fehler beim Laden von Pyodide: ${err?.message || err}`, true);
+      }
+      return;
+    }
+
+    // Standard JSON file
     const reader = new FileReader();
     reader.onload = (event) => {
       const content = event.target?.result as string;
       if (importArea) importArea.value = content;
-      showStatus(`Datei "${file.name}" geladen (${Math.round(file.size / 1024)} KB). Klicken Sie auf "Einstellungen anwenden".`);
+      showStatus(`JSON-Datei "${file.name}" geladen (${Math.round(file.size / 1024)} KB). Klicken Sie auf "Einstellungen anwenden".`);
     };
     reader.onerror = () => {
       showStatus('Fehler beim Lesen der Datei.', true);
@@ -218,7 +262,7 @@ export function openImportExportModal(initialTab: 'export' | 'import' = 'export'
     reader.readAsText(file);
   }
 
-  // Import button action
+  // Import button action (manual JSON apply)
   document.getElementById('btn-apply-import')?.addEventListener('click', () => {
     const content = importArea?.value.trim();
     if (!content) {

@@ -120,6 +120,10 @@ class SimulationStore {
     params.set('gas', s.priceGas.toString());
     params.set('ben', s.pricePetrol.toString());
     params.set('esc', s.fossilEscalation.toString());
+    params.set('eco2', (s.escCO2 ?? s.fossilEscalation ?? 5).toString());
+    params.set('eoil', (s.escOil ?? s.fossilEscalation ?? 3).toString());
+    params.set('egas', (s.escGas ?? s.fossilEscalation ?? 3).toString());
+    params.set('eben', (s.escPetrol ?? s.fossilEscalation ?? 2).toString());
 
     return `${window.location.origin}${window.location.pathname}#v1&${params.toString()}`;
   }
@@ -143,6 +147,10 @@ class SimulationStore {
         params.set('gas', s.priceGas.toString());
         params.set('ben', s.pricePetrol.toString());
         params.set('esc', s.fossilEscalation.toString());
+        params.set('eco2', (s.escCO2 ?? s.fossilEscalation ?? 5).toString());
+        params.set('eoil', (s.escOil ?? s.fossilEscalation ?? 3).toString());
+        params.set('egas', (s.escGas ?? s.fossilEscalation ?? 3).toString());
+        params.set('eben', (s.escPetrol ?? s.fossilEscalation ?? 2).toString());
 
         window.history.replaceState(null, '', `#v1&${params.toString()}`);
       } catch (e) {
@@ -168,6 +176,10 @@ class SimulationStore {
       if (params.has('gas')) this.state.priceGas = Number(params.get('gas')) || 1.13;
       if (params.has('ben')) this.state.pricePetrol = Number(params.get('ben')) || 1.67;
       if (params.has('esc')) this.state.fossilEscalation = Number(params.get('esc')) || 0;
+      this.state.escCO2 = params.has('eco2') ? Number(params.get('eco2')) : (this.state.fossilEscalation || 5);
+      this.state.escOil = params.has('eoil') ? Number(params.get('eoil')) : (this.state.fossilEscalation || 3);
+      this.state.escGas = params.has('egas') ? Number(params.get('egas')) : (this.state.fossilEscalation || 3);
+      this.state.escPetrol = params.has('eben') ? Number(params.get('eben')) : (this.state.fossilEscalation || 2);
     } catch (e) {
       console.warn('Could not parse URL hash state:', e);
     }

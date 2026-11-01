@@ -110,9 +110,6 @@ export function renderKpiDashboard(): string {
         </button>
 
         <div class="action-links">
-          <button id="btn-share-link" class="action-link" title="Link mit aktuellen Parametern kopieren">
-            🔗 Link teilen
-          </button>
           <button id="btn-open-legal" class="action-link">
             Impressum & Datenschutz
           </button>

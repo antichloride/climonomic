@@ -13,7 +13,13 @@ export interface CityBaseline {
   priceOil: number;        // €/l
   priceGas: number;        // €/m³
   pricePetrol: number;     // €/l
-  fossilEscalation: number;// % per year
+
+  // Individual annual escalation rates (% per year)
+  escCO2: number;          // %/a for CO2
+  escOil: number;          // %/a for Heizöl
+  escGas: number;          // %/a for Heizgas
+  escPetrol: number;       // %/a for Benzin
+  fossilEscalation: number;// % per year fallback
   escalationStart: number;
   escalationEnd: number;
 
@@ -116,7 +122,11 @@ export function createDefaultState(): CityBaseline {
     priceOil: 1.00,
     priceGas: 1.13,
     pricePetrol: 1.67,
-    fossilEscalation: 0,
+    escCO2: 5,
+    escOil: 3,
+    escGas: 3,
+    escPetrol: 2,
+    fossilEscalation: 3,
     escalationStart: 2026,
     escalationEnd: 2045,
 
@@ -333,11 +343,36 @@ export function computeScaledBaselines(population: number): ScaledBaselines {
 export function getBaselineValueForId(id: string, population: number): number {
   const parts = id.split('/');
   const domain = parts[0];
-  const param = parts[2];
+  let param = parts[2];
   const sector = parts[3] as SectorKey | undefined;
 
   const inputs = DEFAULT_EXTRACTOR_INPUTS as any;
-  if (!inputs[domain] || !inputs[domain][param]) {
+  if (!inputs[domain]) {
+    return 0;
+  }
+
+  // Handle unit and parameter name aliases between Calculator and Extractor
+  if (param === 'heat_dmd__k__W_h_per_m2_a') param = 'heat_dmd__kWh_per_m2_a';
+  if (param === 'elec_dmd_capita__k_W_h_per_a') param = 'elec_dmd_capita__kWh_per_a';
+  if (param === 'sol_rf_installed__M__Wp') param = 'solar_roof_installed__MWp';
+  if (param === 'sol_rf_self_cnsmp_part') param = 'solar_roof_self_consumption_part';
+  if (param === 'A_heat_heat_pump__k__m2') {
+    const sec = sector || 'private';
+    const air = inputs.buildings?.A_heat_heat_pump_air__k__m2?.[sec] || 0;
+    const ground = inputs.buildings?.A_heat_heat_pump_ground__k__m2?.[sec] || 0;
+    const baseVal = air + ground;
+    if (population > 0) return (baseVal * population) / (REFERENCE_POPULATION * 1000);
+    return baseVal;
+  }
+  if (param === 'hot_water_dmd__k__W_h_per_m2_a') {
+    const sec = sector || 'private';
+    const hwPerPerson = inputs.buildings?.hot_water_dmd__kWh_per_person_a?.[sec] || 0;
+    const inh = inputs.buildings?.n_inhabitants__k__?.[sec] || 0;
+    const fl = inputs.buildings?.floor_A_total__k__m2?.[sec] || 1;
+    return fl > 0 ? (hwPerPerson * inh) / fl : 0;
+  }
+
+  if (!inputs[domain][param]) {
     return 0;
   }
 
@@ -349,10 +384,50 @@ export function getBaselineValueForId(id: string, population: number): number {
     baseVal = val;
   }
 
-  const isExtrinsic = id.includes('n_') || id.includes('floor_A_total') || id.includes('installed');
+  const isExtrinsic = id.includes('n_') || id.includes('floor_A_total') || id.includes('installed') || id.includes('A_heat_');
   if (isExtrinsic && population > 0) {
     return (baseVal * population) / (REFERENCE_POPULATION * 1000);
   }
 
   return baseVal;
 }
+
+export function calculateProjectedPrices(s: CityBaseline) {
+  const targetYear = s.endYear;
+  const compoundYears =
+    targetYear >= s.escalationStart && targetYear <= s.escalationEnd
+      ? targetYear - s.escalationStart
+      : targetYear > s.escalationEnd
+      ? s.escalationEnd - s.escalationStart
+      : 0;
+
+  const escCO2Rate = (s.escCO2 ?? s.fossilEscalation ?? 0) / 100;
+  const escOilRate = (s.escOil ?? s.fossilEscalation ?? 0) / 100;
+  const escGasRate = (s.escGas ?? s.fossilEscalation ?? 0) / 100;
+  const escPetrolRate = (s.escPetrol ?? s.fossilEscalation ?? 0) / 100;
+
+  const projCO2 = s.priceCO2 * Math.pow(1 + escCO2Rate, compoundYears);
+  const deltaCO2 = Math.max(0, projCO2 - s.priceCO2);
+
+  // Carbon surcharge based on German BEHG emissions factors:
+  // Heating oil: 0.00266 t CO2/L
+  // Natural gas: ~0.0020 t CO2/m3
+  // Petrol: ~0.00237 t CO2/L
+  const projOil = s.priceOil * Math.pow(1 + escOilRate, compoundYears) + deltaCO2 * 0.00266;
+  const projGas = s.priceGas * Math.pow(1 + escGasRate, compoundYears) + deltaCO2 * 0.0020;
+  const projPetrol = s.pricePetrol * Math.pow(1 + escPetrolRate, compoundYears) + deltaCO2 * 0.00237;
+
+  return {
+    compoundYears,
+    targetYear,
+    projCO2,
+    pctCO2: s.priceCO2 > 0 ? ((projCO2 - s.priceCO2) / s.priceCO2) * 100 : 0,
+    projOil,
+    pctOil: s.priceOil > 0 ? ((projOil - s.priceOil) / s.priceOil) * 100 : 0,
+    projGas,
+    pctGas: s.priceGas > 0 ? ((projGas - s.priceGas) / s.priceGas) * 100 : 0,
+    projPetrol,
+    pctPetrol: s.pricePetrol > 0 ? ((projPetrol - s.pricePetrol) / s.pricePetrol) * 100 : 0,
+  };
+}
+

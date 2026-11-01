@@ -3,8 +3,12 @@ import wasmUrl from '../../pkg-web/climcalc_core_bg.wasm?url';
 import {
   CityBaseline,
   V5_INPUT_DEFINITIONS,
+  INPUT_DEFINITIONS,
+  REFERENCE_POPULATION,
+  SectorKey,
   getBaselineValueForId,
 } from './baseline-data';
+import { DEFAULT_EXTRACTOR_INPUTS } from './default-inputs';
 
 export interface SectorResults {
   investTotalMio: number;
@@ -460,8 +464,13 @@ export function runSimulation(state: CityBaseline): SimulationOutput {
   const nYears = years.length;
   const endIdx = Math.min(nYears - 1, Math.max(0, state.endYear - startYear));
 
-  // 1. Build Fuel Price Trajectories if escalation is set
-  const escRate = state.fossilEscalation / 100;
+  // 1. Build Individual Fuel Price Trajectories
+  const escCO2Rate = (state.escCO2 ?? state.fossilEscalation ?? 0) / 100;
+  const escOilRate = (state.escOil ?? state.fossilEscalation ?? 0) / 100;
+  const escGasRate = (state.escGas ?? state.fossilEscalation ?? 0) / 100;
+  const escPetrolRate = (state.escPetrol ?? state.fossilEscalation ?? 0) / 100;
+
+  const co2Prices: number[] = [];
   const oilPrices: number[] = [];
   const gasPrices: number[] = [];
   const petrolPrices: number[] = [];
@@ -473,16 +482,35 @@ export function runSimulation(state: CityBaseline): SimulationOutput {
         : y > state.escalationEnd
         ? state.escalationEnd - state.escalationStart
         : 0;
-    const factor = Math.pow(1 + escRate, yearsCompound);
-    oilPrices.push(state.priceOil * factor);
-    gasPrices.push(state.priceGas * factor);
-    petrolPrices.push(state.pricePetrol * factor);
+
+    // Escalated CO2 price in €/t
+    const pCO2 = state.priceCO2 * Math.pow(1 + escCO2Rate, yearsCompound);
+    co2Prices.push(pCO2);
+
+    // Delta of CO2 price above base year
+    const deltaCO2 = Math.max(0, pCO2 - state.priceCO2);
+    // CO2 surcharge for fossil fuels (BEHG emissions factors):
+    // Heating oil: 0.00266 t CO2 / L
+    // Natural gas: ~0.0020 t CO2 / m3
+    // Petrol: ~0.00237 t CO2 / L
+    const co2SurchargeOil = deltaCO2 * 0.00266;
+    const co2SurchargeGas = deltaCO2 * 0.0020;
+    const co2SurchargePetrol = deltaCO2 * 0.00237;
+
+    const pOil = state.priceOil * Math.pow(1 + escOilRate, yearsCompound) + co2SurchargeOil;
+    const pGas = state.priceGas * Math.pow(1 + escGasRate, yearsCompound) + co2SurchargeGas;
+    const pPetrol = state.pricePetrol * Math.pow(1 + escPetrolRate, yearsCompound) + co2SurchargePetrol;
+
+    oilPrices.push(pOil);
+    gasPrices.push(pGas);
+    petrolPrices.push(pPetrol);
   }
 
-  // 2. Populate all 116 baseline inputs with expert overrides and population scaling
+  // 2. Populate baseline inputs map with expert overrides and population scaling
   const baselineValues: Record<string, number> = {};
 
-  for (const id of Object.keys(V5_INPUT_DEFINITIONS)) {
+  for (const def of INPUT_DEFINITIONS) {
+    const id = def.id;
     let val: number;
     if (state.expertOverrides && state.expertOverrides[id] !== undefined) {
       val = state.expertOverrides[id];
@@ -498,38 +526,104 @@ export function runSimulation(state: CityBaseline): SimulationOutput {
       }
     }
     baselineValues[id] = val;
+    // Map to internal Calculator ID if different
+    let calcId = id;
+    if (calcId.includes('heat_dmd__kWh_per_m2_a')) calcId = calcId.replace('heat_dmd__kWh_per_m2_a', 'heat_dmd__k__W_h_per_m2_a');
+    if (calcId.includes('elec_dmd_capita__kWh_per_a')) calcId = calcId.replace('elec_dmd_capita__kWh_per_a', 'elec_dmd_capita__k_W_h_per_a');
+    if (calcId.includes('solar_roof_installed__MWp')) calcId = calcId.replace('solar_roof_installed__MWp', 'sol_rf_installed__M__Wp');
+    if (calcId.includes('solar_roof_self_consumption_part')) calcId = calcId.replace('solar_roof_self_consumption_part', 'sol_rf_self_cnsmp_part');
+    baselineValues[calcId] = val;
   }
+
+  const refPop = REFERENCE_POPULATION * 1000;
+  const popScale = state.population > 0 ? state.population / refPop : 1.0;
+
+  const b = (state.extractorInputs?.buildings || (DEFAULT_EXTRACTOR_INPUTS as any).buildings) as any;
+  const m = (state.extractorInputs?.mobility || (DEFAULT_EXTRACTOR_INPUTS as any).mobility) as any;
+  const e = (state.extractorInputs?.energy || (DEFAULT_EXTRACTOR_INPUTS as any).energy) as any;
 
   // Helper to create and initialize a Calculator instance
   const createCalculator = (): Calculator => {
     const calc = new Calculator(startYear, endYear);
-    for (const [id, val] of Object.entries(baselineValues)) {
-      if (
-        escRate > 0 &&
-        !state.expertOverrides?.[id] &&
-        (id === 'buildings/inputs/price_oil__eur_per_L' ||
-          id === 'buildings/inputs/price_gas__eur_per_m3' ||
-          id === 'mobility/inputs/price_fuel__eur_per_L')
-      ) {
-        const traj =
-          id === 'buildings/inputs/price_oil__eur_per_L'
-            ? oilPrices
-            : id === 'buildings/inputs/price_gas__eur_per_m3'
-            ? gasPrices
-            : petrolPrices;
-        try {
-          calc.set_input_values(id, traj);
-        } catch {
-          calc.set_input(id, val);
-        }
-      } else {
-        try {
-          calc.set_input(id, val);
-        } catch {
-          // Safe fallback
+
+    // Apply structured baseline inputs from extractor/defaults scaled by municipal population
+    for (const sec of ['private', 'industry', 'public'] as SectorKey[]) {
+      calc.set_input(`buildings/inputs/n_inhabitants__k__/${sec}`, (b.n_inhabitants__k__?.[sec] ?? 100) * popScale);
+      calc.set_input(`buildings/inputs/n_buildings/${sec}`, (b.n_buildings?.[sec] ?? 1000) * popScale);
+      calc.set_input(`buildings/inputs/floor_A_building__m2/${sec}`, b.floor_A_building__m2?.[sec] ?? 200);
+      calc.set_input(`buildings/inputs/heat_dmd__k__W_h_per_m2_a/${sec}`, b.heat_dmd__kWh_per_m2_a?.[sec] ?? 95);
+
+      const floorA = (b.floor_A_total__k__m2?.[sec] ?? 1000) * popScale;
+      const hwPerM2 = floorA > 0 ? ((b.hot_water_dmd__kWh_per_person_a?.[sec] ?? 1000) * (b.n_inhabitants__k__?.[sec] ?? 100) * popScale) / floorA : 0;
+      calc.set_input(`buildings/inputs/hot_water_dmd__k__W_h_per_m2_a/${sec}`, hwPerM2);
+      calc.set_input(`buildings/inputs/elec_dmd_capita__k_W_h_per_a/${sec}`, b.elec_dmd_capita__kWh_per_a?.[sec] ?? 1300);
+      calc.set_input(`buildings/inputs/A_heat_oil__k__m2/${sec}`, (b.A_heat_oil__k__m2?.[sec] ?? 100) * popScale);
+      calc.set_input(`buildings/inputs/A_heat_gas__k__m2/${sec}`, (b.A_heat_gas__k__m2?.[sec] ?? 300) * popScale);
+      calc.set_input(`buildings/inputs/A_heat_district_heating__k__m2/${sec}`, (b.A_heat_district_heating__k__m2?.[sec] ?? 100) * popScale);
+      const hpAir = b.A_heat_heat_pump_air__k__m2?.[sec] ?? 0;
+      const hpGround = b.A_heat_heat_pump_ground__k__m2?.[sec] ?? 0;
+      calc.set_input(`buildings/inputs/A_heat_heat_pump__k__m2/${sec}`, (hpAir + hpGround) * popScale);
+
+      calc.set_input(`mobility/inputs/n_inhabitants__k__/${sec}`, (m.n_inhabitants__k__?.[sec] ?? 100) * popScale);
+      calc.set_input(`mobility/inputs/n_cars__k__/${sec}`, (m.n_cars__k__?.[sec] ?? 50) * popScale);
+      calc.set_input(`mobility/inputs/n_bev__k__/${sec}`, (m.n_bev__k__?.[sec] ?? 1) * popScale);
+      calc.set_input(`mobility/inputs/car_mileage_per_vehicle__k__km_per_a/${sec}`, m.car_mileage_per_vehicle__k__km_per_a?.[sec] ?? 12.0);
+
+      const pvRoof = e.solar_roof_installed__MWp?.[sec] ?? 10;
+      calc.set_input(`energy/inputs/sol_rf_installed__M__Wp/${sec}`, pvRoof * popScale);
+      calc.set_input(`energy/inputs/sol_rf_self_cnsmp_part/${sec}`, e.solar_roof_self_consumption_part?.[sec] ?? 0.3);
+      calc.set_input(`energy/inputs/sol_rf_suitable_A_part/${sec}`, 0.4);
+      calc.set_input(`energy/inputs/rf_A__ha/${sec}`, (((b.n_buildings?.[sec] ?? 1000) * 120) / 10000) * popScale);
+    }
+
+    // Fuel pricing inputs with individual trajectories
+    try { calc.set_input_values('buildings/inputs/price_oil__eur_per_L', oilPrices); } catch { calc.set_input('buildings/inputs/price_oil__eur_per_L', state.priceOil); }
+    try { calc.set_input_values('buildings/inputs/price_gas__eur_per_m3', gasPrices); } catch { calc.set_input('buildings/inputs/price_gas__eur_per_m3', state.priceGas); }
+    try { calc.set_input_values('mobility/inputs/price_fuel__eur_per_L', petrolPrices); } catch { calc.set_input('mobility/inputs/price_fuel__eur_per_L', state.pricePetrol); }
+
+    calc.set_input('buildings/inputs/price_district_heating__m__eur_per_W_h', 0.08);
+    calc.set_input('buildings/inputs/price_other_output_nrg__m__eur_per_W_h', 0.05);
+    calc.set_input('buildings/inputs/district_heating_renewable_part', 0.20);
+
+    calc.set_input('mobility/inputs/traveld_dist_per_person__m__m_per_a', 10000);
+    calc.set_input('mobility/inputs/mean_persons_per_car', 1.4);
+    calc.set_input('mobility/inputs/modal_split_car', 0.6);
+
+    const pvOpenInd = e.pv_open_area_installed__ha?.industry ?? 18.0;
+    const windInd = e.wind_installed_area__ha?.industry ?? 144.9;
+    calc.set_input('energy/inputs/sol_os_installed_A__ha/industry', pvOpenInd * popScale);
+    calc.set_input('energy/inputs/sol_os_installed_A__ha/public', 0.0);
+    calc.set_input('energy/inputs/wind_installed_A__ha/industry', windInd * popScale);
+    calc.set_input('energy/inputs/wind_installed_A__ha/public', 0.0);
+
+    calc.set_input('energy/inputs/prchsd_renewable_nrg__G__W_h_per_a/private', 22.4 * popScale);
+    calc.set_input('energy/inputs/prchsd_renewable_nrg__G__W_h_per_a/industry', 20.7 * popScale);
+    calc.set_input('energy/inputs/prchsd_renewable_nrg__G__W_h_per_a/public', 1.1 * popScale);
+
+    calc.set_input('energy/inputs/renewable_nrg_price__m__eur_per_W_h/private', 0.08);
+    calc.set_input('energy/inputs/renewable_nrg_price__m__eur_per_W_h/industry', 0.08);
+    calc.set_input('energy/inputs/renewable_nrg_price__m__eur_per_W_h/public', 0.08);
+
+    calc.set_input('energy/inputs/nrg_mix_price__m__eur_per_W_h/private', 0.12);
+    calc.set_input('energy/inputs/nrg_mix_price__m__eur_per_W_h/industry', 0.12);
+    calc.set_input('energy/inputs/nrg_mix_price__m__eur_per_W_h/public', 0.12);
+
+    // Apply expert overrides if provided
+    if (state.expertOverrides) {
+      for (const [rawId, overrideVal] of Object.entries(state.expertOverrides)) {
+        if (typeof overrideVal === 'number') {
+          let id = rawId;
+          if (id.includes('heat_dmd__kWh_per_m2_a')) id = id.replace('heat_dmd__kWh_per_m2_a', 'heat_dmd__k__W_h_per_m2_a');
+          if (id.includes('elec_dmd_capita__kWh_per_a')) id = id.replace('elec_dmd_capita__kWh_per_a', 'elec_dmd_capita__k_W_h_per_a');
+          if (id.includes('solar_roof_installed__MWp')) id = id.replace('solar_roof_installed__MWp', 'sol_rf_installed__M__Wp');
+          if (id.includes('solar_roof_self_consumption_part')) id = id.replace('solar_roof_self_consumption_part', 'sol_rf_self_cnsmp_part');
+          try {
+            calc.set_input(id, overrideVal);
+          } catch {}
         }
       }
     }
+
     return calc;
   };
 
@@ -569,8 +663,13 @@ export function runSimulation(state: CityBaseline): SimulationOutput {
     const privInvest = getRes('stakeholders/results/private_invest__M__eur_per_a').map(Math.abs);
     const indInvest = getRes('stakeholders/results/industry_invest__M__eur_per_a').map(Math.abs);
     const comInvest = getRes('stakeholders/results/community_invest__M__eur_per_a').map(Math.abs);
+    const windInvest = years.map((_, i) =>
+      (getRes('energy/results/wind_invest__M__eur_per_a/private')[i] || 0) +
+      (getRes('energy/results/wind_invest__M__eur_per_a/industry')[i] || 0) +
+      (getRes('energy/results/wind_invest__M__eur_per_a/public')[i] || 0)
+    );
     const totalInvestPerYear = years.map(
-      (_, i) => (privInvest[i] || 0) + (indInvest[i] || 0) + (comInvest[i] || 0)
+      (_, i) => (privInvest[i] || 0) + (indInvest[i] || 0) + (comInvest[i] || 0) + (windInvest[i] || 0)
     );
 
     const sumPeriod = (arr: number[]) => {
@@ -580,7 +679,7 @@ export function runSimulation(state: CityBaseline): SimulationOutput {
     };
 
     const privInvestSum = sumPeriod(privInvest);
-    const indInvestSum = sumPeriod(indInvest);
+    const indInvestSum = sumPeriod(indInvest) + sumPeriod(windInvest);
     const comInvestSum = sumPeriod(comInvest);
     const totalInvestSum = sumPeriod(totalInvestPerYear);
 
@@ -690,7 +789,7 @@ export function runSimulation(state: CityBaseline): SimulationOutput {
   const endCO2Baseline = runBaseline.totalCO2[endIdx] ?? runBaseline.totalCO2[runBaseline.totalCO2.length - 1];
   const endCO2Active = runActive.totalCO2[endIdx] ?? runActive.totalCO2[runActive.totalCO2.length - 1];
   const co2ReductionTsdTonnes = Math.max(0, endCO2Baseline - endCO2Active);
-  const overallReductionPct = (co2ReductionTsdTonnes / startCO2Total) * 100;
+  const overallReductionPct = Math.min(100, Math.max(0, (co2ReductionTsdTonnes / startCO2Total) * 100));
 
   const totalInvestMio = runActive.totalInvestSum || 354 * (state.population / 50000);
   const directEffectsMio = runActive.totalEffSum || 740 * (state.population / 50000);
@@ -820,7 +919,7 @@ export function runSimulation(state: CityBaseline): SimulationOutput {
       runWithout.totalCO2[endIdx] - runActive.totalCO2[endIdx]
     );
     const co2ReductionTsdTo = co2DiffDirect + extraAvoidedCO2;
-    const co2ReductionPct = (co2ReductionTsdTo / startCO2Total) * 100;
+    const co2ReductionPct = Math.min(100, Math.max(0, (co2ReductionTsdTo / startCO2Total) * 100));
 
     // Cumulative CO2 reduction across period
     let cumCO2Reduction = 0;
@@ -855,7 +954,7 @@ export function runSimulation(state: CityBaseline): SimulationOutput {
       0,
       runActive.totalInvestSum - runWithout.totalInvestSum
     );
-    const investMio = rawInvestDiff > 1000 ? rawInvestDiff / 1000 : rawInvestDiff;
+    const investMio = rawInvestDiff;
 
     // Direct operational recurring savings achieved per year in target year:
     const directEffectMioYear = Math.max(
@@ -873,8 +972,12 @@ export function runSimulation(state: CityBaseline): SimulationOutput {
           0,
           runActive.totalEffSum - runWithout.totalEffSum
         );
-        costPerTonCO2 =
-          cumEffDiff > 0 ? (cumEffDiff * 1000) / cumCO2Reduction : 0;
+        if (cumEffDiff > 0) {
+          costPerTonCO2 = (cumEffDiff * 1000) / cumCO2Reduction;
+        } else if (key === 'greenPower') {
+          // Renewable electricity procurement tariff surcharge (~2.0 ct/kWh = ~38.5 €/t CO2)
+          costPerTonCO2 = 38.5;
+        }
       }
     }
 

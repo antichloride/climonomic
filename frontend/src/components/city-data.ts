@@ -1,9 +1,11 @@
 import { store } from '../store';
+import { calculateProjectedPrices, CityBaseline } from '../baseline-data';
 import { openAdvancedModal } from './advanced-modal';
 import { openSourcesModal } from './info-modals';
 
 export function renderCityDataCard(): string {
   const s = store.getState();
+  const proj = calculateProjectedPrices(s);
 
   return `
     <section class="card" id="card-city-data">
@@ -61,9 +63,6 @@ export function renderCityDataCard(): string {
             ? `⚙️ Manuelle Dateneingabe (<strong style="color: var(--k-color-secondary-base);">${Object.keys(s.expertOverrides || {}).length} angepasst</strong>)`
             : `⚙️ Manuelle Dateneingabe (Für Fortgeschrittene)`}
         </button>
-        <button id="btn-open-import-export-card" class="btn-pill-divider" type="button" style="background: var(--k-color-primary-surface); color: var(--k-color-primary-base); border-color: var(--k-color-primary-base); font-weight: 600;">
-          ⇅ Excel-Format Import / Export
-        </button>
       </div>
 
       <!-- Card 1b: Fossil Prices -->
@@ -72,66 +71,126 @@ export function renderCityDataCard(): string {
           <h3 style="font-size: var(--k-font-size-h3); font-weight: 700;">Preise für fossile Energien</h3>
         </div>
         <p class="card-subtitle" style="margin-bottom: 16px;">
-          Durch zunehmende Bepreisung von CO₂-Emissionen ist mit einem deutlichen Kostenanstieg für fossile Energien zu rechnen. Eingegebene Preise gelten für heute und werden mit der Preis-Entwicklung dann hochgerechnet.
+          Durch Bepreisung von CO₂-Emissionen und Marktveränderungen steigen die Kosten fossiler Energien. Jeder Energieträger kann individuell in Startpreis und jährlicher Steigerungsrate angepasst werden.
         </p>
 
-        <!-- 4 Fuel Inputs -->
+        <!-- 4 Individual Fuel Price Cards -->
         <div class="input-grid-4">
-          <div class="field-group">
-            <label class="field-label" for="input-price-co2">CO₂-Preis</label>
+          <!-- Card 1: CO2-Preis -->
+          <div class="fossil-card-item">
+            <div class="fossil-card-header">
+              <span class="fossil-card-title">CO₂-Preis</span>
+              <span class="fossil-card-unit">€/t</span>
+            </div>
             <div class="input-with-unit">
               <input type="number" id="input-price-co2" class="input-control num" value="${s.priceCO2.toFixed(2)}" step="5" min="0" />
               <span class="unit-label">€/t</span>
             </div>
-          </div>
-
-          <div class="field-group">
-            <label class="field-label" for="input-price-oil">Heizöl</label>
-            <div class="input-with-unit">
-              <input type="number" id="input-price-oil" class="input-control num" value="${s.priceOil.toFixed(2)}" step="0.05" min="0" />
-              <span class="unit-label">€/l</span>
+            <div class="fossil-item-esc">
+              <div class="fossil-esc-header">
+                <span class="fossil-esc-label">Preisanstieg</span>
+                <span id="lbl-esc-co2" class="fossil-esc-val">+${s.escCO2}%/a</span>
+              </div>
+              <div class="range-slider-container">
+                <input type="range" id="slider-esc-co2" class="range-slider" min="0" max="15" step="1" value="${s.escCO2}" />
+              </div>
             </div>
-          </div>
-
-          <div class="field-group">
-            <label class="field-label" for="input-price-gas">Heizgas</label>
-            <div class="input-with-unit">
-              <input type="number" id="input-price-gas" class="input-control num" value="${s.priceGas.toFixed(2)}" step="0.05" min="0" />
-              <span class="unit-label">€/m³</span>
-            </div>
-          </div>
-
-          <div class="field-group">
-            <label class="field-label" for="input-price-petrol">Benzin</label>
-            <div class="input-with-unit">
-              <input type="number" id="input-price-petrol" class="input-control num" value="${s.pricePetrol.toFixed(2)}" step="0.05" min="0" />
-              <span class="unit-label">€/l</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Escalation Slider -->
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: center; margin-top: 12px;">
-          <div class="field-group">
-            <label class="field-label" for="slider-fossil-esc">
-              Preisanstieg für fossile Energien ⓘ
-              <span id="label-esc-val" class="num" style="font-weight: 700; color: var(--k-color-secondary-base);">
-                Um ${s.fossilEscalation} %/Jahr
-              </span>
-            </label>
-            <div class="range-slider-container">
-              <input type="range" id="slider-fossil-esc" class="range-slider" min="0" max="15" step="1" value="${s.fossilEscalation}" />
-              <div class="slider-labels">
-                <span>0%</span>
-                <span>3%</span>
-                <span>6%</span>
-                <span>9%</span>
-                <span>12%</span>
-                <span>15%</span>
+            <div class="fossil-preview-box">
+              <span class="preview-target-text">Zieljahr ${s.endYear}:</span>
+              <div class="preview-val-row">
+                <span class="preview-price" id="preview-val-co2">${proj.projCO2.toFixed(2)} €/t</span>
+                <span class="preview-badge ${proj.pctCO2 === 0 ? 'neutral' : ''}" id="preview-badge-co2">${proj.pctCO2 >= 0 ? '+' : ''}${proj.pctCO2.toFixed(0)}%</span>
               </div>
             </div>
           </div>
 
+          <!-- Card 2: Heizöl -->
+          <div class="fossil-card-item">
+            <div class="fossil-card-header">
+              <span class="fossil-card-title">Heizöl</span>
+              <span class="fossil-card-unit">€/l</span>
+            </div>
+            <div class="input-with-unit">
+              <input type="number" id="input-price-oil" class="input-control num" value="${s.priceOil.toFixed(2)}" step="0.05" min="0" />
+              <span class="unit-label">€/l</span>
+            </div>
+            <div class="fossil-item-esc">
+              <div class="fossil-esc-header">
+                <span class="fossil-esc-label">Preisanstieg</span>
+                <span id="lbl-esc-oil" class="fossil-esc-val">+${s.escOil}%/a</span>
+              </div>
+              <div class="range-slider-container">
+                <input type="range" id="slider-esc-oil" class="range-slider" min="0" max="15" step="1" value="${s.escOil}" />
+              </div>
+            </div>
+            <div class="fossil-preview-box">
+              <span class="preview-target-text">Zieljahr ${s.endYear}:</span>
+              <div class="preview-val-row">
+                <span class="preview-price" id="preview-val-oil">${proj.projOil.toFixed(2)} €/l</span>
+                <span class="preview-badge ${proj.pctOil === 0 ? 'neutral' : ''}" id="preview-badge-oil">${proj.pctOil >= 0 ? '+' : ''}${proj.pctOil.toFixed(0)}%</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 3: Heizgas -->
+          <div class="fossil-card-item">
+            <div class="fossil-card-header">
+              <span class="fossil-card-title">Heizgas</span>
+              <span class="fossil-card-unit">€/m³</span>
+            </div>
+            <div class="input-with-unit">
+              <input type="number" id="input-price-gas" class="input-control num" value="${s.priceGas.toFixed(2)}" step="0.05" min="0" />
+              <span class="unit-label">€/m³</span>
+            </div>
+            <div class="fossil-item-esc">
+              <div class="fossil-esc-header">
+                <span class="fossil-esc-label">Preisanstieg</span>
+                <span id="lbl-esc-gas" class="fossil-esc-val">+${s.escGas}%/a</span>
+              </div>
+              <div class="range-slider-container">
+                <input type="range" id="slider-esc-gas" class="range-slider" min="0" max="15" step="1" value="${s.escGas}" />
+              </div>
+            </div>
+            <div class="fossil-preview-box">
+              <span class="preview-target-text">Zieljahr ${s.endYear}:</span>
+              <div class="preview-val-row">
+                <span class="preview-price" id="preview-val-gas">${proj.projGas.toFixed(2)} €/m³</span>
+                <span class="preview-badge ${proj.pctGas === 0 ? 'neutral' : ''}" id="preview-badge-gas">${proj.pctGas >= 0 ? '+' : ''}${proj.pctGas.toFixed(0)}%</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 4: Benzin -->
+          <div class="fossil-card-item">
+            <div class="fossil-card-header">
+              <span class="fossil-card-title">Benzin</span>
+              <span class="fossil-card-unit">€/l</span>
+            </div>
+            <div class="input-with-unit">
+              <input type="number" id="input-price-petrol" class="input-control num" value="${s.pricePetrol.toFixed(2)}" step="0.05" min="0" />
+              <span class="unit-label">€/l</span>
+            </div>
+            <div class="fossil-item-esc">
+              <div class="fossil-esc-header">
+                <span class="fossil-esc-label">Preisanstieg</span>
+                <span id="lbl-esc-petrol" class="fossil-esc-val">+${s.escPetrol}%/a</span>
+              </div>
+              <div class="range-slider-container">
+                <input type="range" id="slider-esc-petrol" class="range-slider" min="0" max="15" step="1" value="${s.escPetrol}" />
+              </div>
+            </div>
+            <div class="fossil-preview-box">
+              <span class="preview-target-text">Zieljahr ${s.endYear}:</span>
+              <div class="preview-val-row">
+                <span class="preview-price" id="preview-val-petrol">${proj.projPetrol.toFixed(2)} €/l</span>
+                <span class="preview-badge ${proj.pctPetrol === 0 ? 'neutral' : ''}" id="preview-badge-petrol">${proj.pctPetrol >= 0 ? '+' : ''}${proj.pctPetrol.toFixed(0)}%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Escalation Horizon & Bulk Actions -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: center; margin-top: 14px;">
           <div class="field-group">
             <label class="field-label" for="slider-esc-horizon">
               Preiszeitraum
@@ -148,6 +207,18 @@ export function renderCityDataCard(): string {
                 <span>2040</span>
                 <span>2045</span>
               </div>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+              <span class="field-label" style="margin: 0;">Alle Preisanstiege gleichzeitig anpassen:</span>
+            </div>
+            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <button type="button" class="btn-fossil-quick" data-rate="0">0% Konstant</button>
+              <button type="button" class="btn-fossil-quick" data-rate="3">3% Moderat</button>
+              <button type="button" class="btn-fossil-quick" data-rate="6">6% Ambitioniert</button>
+              <button type="button" class="btn-fossil-quick" data-rate="9">9% Stark</button>
             </div>
           </div>
         </div>
@@ -180,8 +251,11 @@ export function setupCityDataListeners() {
 
   // Initialize progress tracks
   syncProgress('slider-end-year');
-  syncProgress('slider-fossil-esc');
   syncProgress('slider-esc-horizon');
+  syncProgress('slider-esc-co2');
+  syncProgress('slider-esc-oil');
+  syncProgress('slider-esc-gas');
+  syncProgress('slider-esc-petrol');
 
   document.getElementById('slider-end-year')?.addEventListener('input', (e) => {
     const val = Number((e.target as HTMLInputElement).value);
@@ -189,55 +263,130 @@ export function setupCityDataListeners() {
     const lbl = document.getElementById('label-timeframe');
     if (lbl) lbl.textContent = `2026 bis ${val}`;
     store.updateState(s => { s.endYear = val; });
+    updateFossilPreviews();
   });
 
-  document.getElementById('input-price-co2')?.addEventListener('change', (e) => {
-    const val = Math.max(0, Number((e.target as HTMLInputElement).value));
-    store.updateState(s => { s.priceCO2 = val; });
-  });
+  // Base price inputs
+  const bindPriceInput = (id: string, prop: 'priceCO2' | 'priceOil' | 'priceGas' | 'pricePetrol') => {
+    const el = document.getElementById(id) as HTMLInputElement | null;
+    if (!el) return;
+    el.addEventListener('input', () => {
+      const val = Math.max(0, Number(el.value) || 0);
+      store.updateState(s => { s[prop] = val; });
+      updateFossilPreviews();
+    });
+  };
 
-  document.getElementById('input-price-oil')?.addEventListener('change', (e) => {
-    const val = Math.max(0, Number((e.target as HTMLInputElement).value));
-    store.updateState(s => { s.priceOil = val; });
-  });
+  bindPriceInput('input-price-co2', 'priceCO2');
+  bindPriceInput('input-price-oil', 'priceOil');
+  bindPriceInput('input-price-gas', 'priceGas');
+  bindPriceInput('input-price-petrol', 'pricePetrol');
 
-  document.getElementById('input-price-gas')?.addEventListener('change', (e) => {
-    const val = Math.max(0, Number((e.target as HTMLInputElement).value));
-    store.updateState(s => { s.priceGas = val; });
-  });
+  // Individual escalation sliders
+  const bindEscSlider = (
+    sliderId: string,
+    labelId: string,
+    prop: 'escCO2' | 'escOil' | 'escGas' | 'escPetrol'
+  ) => {
+    const el = document.getElementById(sliderId) as HTMLInputElement | null;
+    if (!el) return;
+    el.addEventListener('input', () => {
+      const val = Number(el.value);
+      syncProgress(sliderId);
+      const lbl = document.getElementById(labelId);
+      if (lbl) lbl.textContent = `+${val}%/a`;
+      store.updateState(s => {
+        s[prop] = val;
+      });
+      updateFossilPreviews();
+    });
+  };
 
-  document.getElementById('input-price-petrol')?.addEventListener('change', (e) => {
-    const val = Math.max(0, Number((e.target as HTMLInputElement).value));
-    store.updateState(s => { s.pricePetrol = val; });
-  });
+  bindEscSlider('slider-esc-co2', 'lbl-esc-co2', 'escCO2');
+  bindEscSlider('slider-esc-oil', 'lbl-esc-oil', 'escOil');
+  bindEscSlider('slider-esc-gas', 'lbl-esc-gas', 'escGas');
+  bindEscSlider('slider-esc-petrol', 'lbl-esc-petrol', 'escPetrol');
 
-  document.getElementById('slider-fossil-esc')?.addEventListener('input', (e) => {
-    const val = Number((e.target as HTMLInputElement).value);
-    syncProgress('slider-fossil-esc');
-    const lbl = document.getElementById('label-esc-val');
-    if (lbl) lbl.textContent = `Um ${val} %/Jahr`;
-    store.updateState(s => { s.fossilEscalation = val; });
-  });
-
+  // Horizon slider
   document.getElementById('slider-esc-horizon')?.addEventListener('input', (e) => {
     const val = Number((e.target as HTMLInputElement).value);
     syncProgress('slider-esc-horizon');
     const lbl = document.getElementById('label-esc-horizon');
     if (lbl) lbl.textContent = `2026 bis ${val}`;
     store.updateState(s => { s.escalationEnd = val; });
+    updateFossilPreviews();
+  });
+
+  // Quick buttons to set all 4 escalation rates at once
+  document.querySelectorAll<HTMLButtonElement>('.btn-fossil-quick').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const rate = Number(btn.dataset.rate) || 0;
+      store.updateState(s => {
+        s.escCO2 = rate;
+        s.escOil = rate;
+        s.escGas = rate;
+        s.escPetrol = rate;
+        s.fossilEscalation = rate;
+      });
+
+      // Update slider positions & progress tracks
+      const sliders = [
+        ['slider-esc-co2', 'lbl-esc-co2'],
+        ['slider-esc-oil', 'lbl-esc-oil'],
+        ['slider-esc-gas', 'lbl-esc-gas'],
+        ['slider-esc-petrol', 'lbl-esc-petrol'],
+      ] as const;
+
+      for (const [slId, lbId] of sliders) {
+        const inp = document.getElementById(slId) as HTMLInputElement | null;
+        if (inp) {
+          inp.value = rate.toString();
+          syncProgress(slId);
+        }
+        const lbl = document.getElementById(lbId);
+        if (lbl) lbl.textContent = `+${rate}%/a`;
+      }
+
+      updateFossilPreviews();
+    });
   });
 
   document.getElementById('btn-open-advanced')?.addEventListener('click', () => {
     openAdvancedModal();
   });
 
-  document.getElementById('btn-open-import-export-card')?.addEventListener('click', async () => {
-    const { openImportExportModal } = await import('./import-export-modal');
-    openImportExportModal('import');
-  });
-
   document.getElementById('btn-open-sources')?.addEventListener('click', () => {
     openSourcesModal();
+  });
+}
+
+export function updateFossilPreviews(state?: CityBaseline) {
+  const s = state || store.getState();
+  const proj = calculateProjectedPrices(s);
+
+  const updateCardPreview = (
+    valId: string,
+    badgeId: string,
+    val: number,
+    unit: string,
+    pct: number
+  ) => {
+    const elVal = document.getElementById(valId);
+    if (elVal) elVal.textContent = `${val.toFixed(2)} ${unit}`;
+    const elBadge = document.getElementById(badgeId);
+    if (elBadge) {
+      elBadge.textContent = `${pct >= 0 ? '+' : ''}${pct.toFixed(0)}%`;
+      elBadge.className = `preview-badge ${pct === 0 ? 'neutral' : ''}`;
+    }
+  };
+
+  updateCardPreview('preview-val-co2', 'preview-badge-co2', proj.projCO2, '€/t', proj.pctCO2);
+  updateCardPreview('preview-val-oil', 'preview-badge-oil', proj.projOil, '€/l', proj.pctOil);
+  updateCardPreview('preview-val-gas', 'preview-badge-gas', proj.projGas, '€/m³', proj.pctGas);
+  updateCardPreview('preview-val-petrol', 'preview-badge-petrol', proj.projPetrol, '€/l', proj.pctPetrol);
+
+  document.querySelectorAll('.preview-target-text').forEach(el => {
+    el.textContent = `Zieljahr ${s.endYear}:`;
   });
 }
 
@@ -254,10 +403,7 @@ export function syncCityDataInputsFromState() {
     slEnd.value = s.endYear.toString();
     const lbl = document.getElementById('label-timeframe');
     if (lbl) lbl.textContent = `2026 bis ${s.endYear}`;
-    const min = Number(slEnd.min) || 2026;
-    const max = Number(slEnd.max) || 2045;
-    const pct = ((s.endYear - min) / (max - min)) * 100;
-    slEnd.style.setProperty('--slider-progress', `${pct}%`);
+    syncProgress('slider-end-year');
   }
 
   const inpCO2 = document.getElementById('input-price-co2') as HTMLInputElement | null;
@@ -272,27 +418,31 @@ export function syncCityDataInputsFromState() {
   const inpBen = document.getElementById('input-price-petrol') as HTMLInputElement | null;
   if (inpBen && document.activeElement !== inpBen) inpBen.value = s.pricePetrol.toFixed(2);
 
-  const slEsc = document.getElementById('slider-fossil-esc') as HTMLInputElement | null;
-  if (slEsc && document.activeElement !== slEsc) {
-    slEsc.value = s.fossilEscalation.toString();
-    const lbl = document.getElementById('label-esc-val');
-    if (lbl) lbl.textContent = `Um ${s.fossilEscalation} %/Jahr`;
-    const min = Number(slEsc.min) || 0;
-    const max = Number(slEsc.max) || 15;
-    const pct = ((s.fossilEscalation - min) / (max - min)) * 100;
-    slEsc.style.setProperty('--slider-progress', `${pct}%`);
-  }
+  // Sync individual escalation sliders
+  const syncEsc = (slId: string, lbId: string, val: number) => {
+    const sl = document.getElementById(slId) as HTMLInputElement | null;
+    if (sl && document.activeElement !== sl) {
+      sl.value = val.toString();
+      syncProgress(slId);
+      const lbl = document.getElementById(lbId);
+      if (lbl) lbl.textContent = `+${val}%/a`;
+    }
+  };
+
+  syncEsc('slider-esc-co2', 'lbl-esc-co2', s.escCO2 ?? s.fossilEscalation ?? 5);
+  syncEsc('slider-esc-oil', 'lbl-esc-oil', s.escOil ?? s.fossilEscalation ?? 3);
+  syncEsc('slider-esc-gas', 'lbl-esc-gas', s.escGas ?? s.fossilEscalation ?? 3);
+  syncEsc('slider-esc-petrol', 'lbl-esc-petrol', s.escPetrol ?? s.fossilEscalation ?? 2);
 
   const slHrz = document.getElementById('slider-esc-horizon') as HTMLInputElement | null;
   if (slHrz && document.activeElement !== slHrz) {
     slHrz.value = s.escalationEnd.toString();
     const lbl = document.getElementById('label-esc-horizon');
     if (lbl) lbl.textContent = `2026 bis ${s.escalationEnd}`;
-    const min = Number(slHrz.min) || 2026;
-    const max = Number(slHrz.max) || 2045;
-    const pct = ((s.escalationEnd - min) / (max - min)) * 100;
-    slHrz.style.setProperty('--slider-progress', `${pct}%`);
+    syncProgress('slider-esc-horizon');
   }
+
+  updateFossilPreviews(s);
 
   const btnAdv = document.getElementById('btn-open-advanced');
   if (btnAdv) {

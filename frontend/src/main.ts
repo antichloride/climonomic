@@ -85,15 +85,6 @@ async function bootstrap() {
       openReportingModal();
     });
 
-    document.getElementById('btn-share-link')?.addEventListener('click', () => {
-      const url = store.getShareableUrl();
-      navigator.clipboard.writeText(url).then(() => {
-        showToast('🔗 Simulations-Link in Zwischenablage kopiert');
-      }).catch(() => {
-        showToast('Link kopiert: ' + url);
-      });
-    });
-
     document.getElementById('btn-open-legal')?.addEventListener('click', () => {
       openLegalModal();
     });

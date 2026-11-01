@@ -25,18 +25,22 @@ export function renderSvgContent(): string {
 
   if (currentTab === 'co2') {
     dataSeries = out.co2Trajectory.current;
-    yMin = -30;
-    yMax = Math.max(...out.co2Trajectory.baseline, 210);
+    const minVal = Math.min(...dataSeries, 0);
+    yMin = minVal < 0 ? minVal * 1.1 : 0;
+    const maxVal = Math.max(...out.co2Trajectory.baseline, ...dataSeries, 10);
+    yMax = maxVal * 1.15;
     unit = 'tsd. t CO₂';
   } else if (currentTab === 'costs') {
     dataSeries = out.costsTrajectory.directSavings;
+    const maxVal = Math.max(...dataSeries, 10);
     yMin = 0;
-    yMax = Math.max(...dataSeries, 50);
+    yMax = maxVal * 1.15;
     unit = 'Mio €/a';
   } else if (currentTab === 'jobs') {
     dataSeries = out.jobsTrajectory.localJobs;
+    const maxVal = Math.max(...dataSeries, 10);
     yMin = 0;
-    yMax = Math.max(...dataSeries, 50);
+    yMax = maxVal * 1.15;
     unit = 'Jobs';
   }
 
