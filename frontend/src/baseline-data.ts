@@ -1,4 +1,4 @@
-// Baseline configuration and scaling from German national averages (reference: 50,000 inhabitants)
+export * from './v5-schema';
 
 export interface CityBaseline {
   cityName: string;
@@ -14,6 +14,9 @@ export interface CityBaseline {
   fossilEscalation: number;// % per year
   escalationStart: number;
   escalationEnd: number;
+
+  // Expert Mode custom overrides for all 116 input IDs
+  expertOverrides: Record<string, number>;
 
   // Measures configuration
   measures: {
@@ -111,6 +114,8 @@ export function createDefaultState(): CityBaseline {
     fossilEscalation: 0,
     escalationStart: 2026,
     escalationEnd: 2045,
+
+    expertOverrides: {},
 
     measures: {
       heatDmd: {

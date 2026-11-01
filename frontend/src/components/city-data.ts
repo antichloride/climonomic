@@ -57,7 +57,9 @@ export function renderCityDataCard(): string {
       <!-- Advanced Pill Divider -->
       <div class="advanced-divider">
         <button id="btn-open-advanced" class="btn-pill-divider" type="button">
-          ⚙️ Manuelle Dateneingabe (Für Fortgeschrittene)
+          ${(Object.keys(s.expertOverrides || {}).length > 0)
+            ? `⚙️ Manuelle Dateneingabe (<strong style="color: var(--k-color-secondary-base);">${Object.keys(s.expertOverrides || {}).length} angepasst</strong>)`
+            : `⚙️ Manuelle Dateneingabe (Für Fortgeschrittene)`}
         </button>
       </div>
 
@@ -282,5 +284,13 @@ export function syncCityDataInputsFromState() {
     const max = Number(slHrz.max) || 2045;
     const pct = ((s.escalationEnd - min) / (max - min)) * 100;
     slHrz.style.setProperty('--slider-progress', `${pct}%`);
+  }
+
+  const btnAdv = document.getElementById('btn-open-advanced');
+  if (btnAdv) {
+    const count = Object.keys(s.expertOverrides || {}).length;
+    btnAdv.innerHTML = count > 0
+      ? `⚙️ Manuelle Dateneingabe (<strong style="color: var(--k-color-secondary-base);">${count} angepasst</strong>)`
+      : `⚙️ Manuelle Dateneingabe (Für Fortgeschrittene)`;
   }
 }
