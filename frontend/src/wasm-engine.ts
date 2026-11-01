@@ -66,6 +66,9 @@ export interface SimulationOutput {
 
   // Dynamic pills for individual cards
   measureMetrics: Record<string, MeasurePillMetric>;
+
+  // Municipal transition evaluation model output
+  modelOutputs?: any;
 }
 
 let wasmInitialized = false;
@@ -800,61 +803,134 @@ export function runSimulation(state: CityBaseline): SimulationOutput {
       43 * (state.population / 50000)
   );
 
-  // Trajectories for graphs
-  const investmentsPerYear: number[] = [];
-  const savingsPerYear: number[] = [];
-  const jobsPerYear: number[] = [];
+  // Helper to scale extractor inputs when population differs from nationwide reference
+  const getScaledExtractorInputs = (s: CityBaseline): any => {
+    const inputs = JSON.parse(JSON.stringify(s.extractorInputs || DEFAULT_EXTRACTOR_INPUTS));
+    const basePopK = inputs.buildings?.n_inhabitants__k__?.private || 11238.0;
+    const currentPopK = s.population / 1000.0;
+    if (!basePopK || basePopK <= 0) return inputs;
+    const ratio = currentPopK / basePopK;
+    if (Math.abs(ratio - 1.0) < 1e-4) {
+      return inputs;
+    }
+    for (const sec of ['private', 'industry', 'public']) {
+      if (inputs.buildings?.n_inhabitants__k__?.[sec] != null) inputs.buildings.n_inhabitants__k__[sec] *= ratio;
+      if (inputs.buildings?.n_households__k__?.[sec] != null) inputs.buildings.n_households__k__[sec] *= ratio;
+      if (inputs.buildings?.n_buildings?.[sec] != null) inputs.buildings.n_buildings[sec] *= ratio;
+      if (inputs.buildings?.floor_A_total__k__m2?.[sec] != null) inputs.buildings.floor_A_total__k__m2[sec] *= ratio;
+      if (inputs.buildings?.total_heat_dmd_baseline__GWh_per_a?.[sec] != null) inputs.buildings.total_heat_dmd_baseline__GWh_per_a[sec] *= ratio;
+      if (inputs.buildings?.elec_dmd_baseline__GWh_per_a?.[sec] != null) inputs.buildings.elec_dmd_baseline__GWh_per_a[sec] *= ratio;
+      if (inputs.mobility?.n_cars__k__?.[sec] != null) inputs.mobility.n_cars__k__[sec] *= ratio;
+      if (inputs.mobility?.n_bev__k__?.[sec] != null) inputs.mobility.n_bev__k__[sec] *= ratio;
+      if (inputs.energy?.solar_roof_installed__MWp?.[sec] != null) inputs.energy.solar_roof_installed__MWp[sec] *= ratio;
+    }
+    return inputs;
+  };
 
-  for (let i = 0; i < nYears; i++) {
-    const inv = runActive.totalInvestPerYear[i] || 0;
-    const sav = runActive.totalEffPerYear[i] || 0;
-    const j = Math.round(runActive.jobsSeries[i] || 0);
-
-    investmentsPerYear.push(inv > 0 ? inv : totalInvestMio / (endIdx + 1));
-    savingsPerYear.push(sav);
-    jobsPerYear.push(j > 0 ? j : localJobs);
+  // Municipal transition model calculation (matching verified Excel fixture)
+  let modelOut: any = null;
+  let modelDash: any = null;
+  let secResults: any = null;
+  try {
+    const calcModel = new Calculator(startYear, endYear);
+    const scaledInputs = getScaledExtractorInputs(state);
+    modelOut = (calcModel as any).calculate(scaledInputs, (state as any).extractorMeasures || {});
+    if (modelOut?.summary_dashboard) {
+      modelDash = modelOut.summary_dashboard;
+      secResults = modelOut.sector_results;
+    }
+  } catch (err) {
+    console.warn('Municipal transition model error:', err);
   }
 
   // Sector breakdown scorecards
   const allKpi: SectorResults = {
-    investTotalMio: totalInvestMio,
+    investTotalMio: modelDash
+      ? modelDash.subtotal_private_industry_public.invest__M__eur
+      : totalInvestMio,
     co2ReductionPercent: overallReductionPct,
     co2ReductionTsdTonnes,
-    directEffectsMio,
-    indirectEffectsMio,
+    directEffectsMio: modelDash
+      ? modelDash.subtotal_private_industry_public.savings__M__eur_per_a
+      : directEffectsMio,
+    indirectEffectsMio: secResults?.public
+      ? (secResults.public.additional_taxes__M__eur_per_a || 0) + (secResults.public.concessions__M__eur_per_a || 0)
+      : (indirectEffectsMio || runActive.comTaxSum),
     localTurnoverMio,
     localJobs,
   };
 
   const privateKpi: SectorResults = {
-    investTotalMio: runActive.privInvestSum || totalInvestMio * 0.62,
+    investTotalMio: modelDash
+      ? modelDash.private_households.invest__M__eur
+      : (runActive.privInvestSum || totalInvestMio * 0.62),
     co2ReductionPercent: overallReductionPct * 0.98,
     co2ReductionTsdTonnes: co2ReductionTsdTonnes * 0.6,
-    directEffectsMio: runActive.privEffSum || directEffectsMio * 0.64,
-    indirectEffectsMio: indirectEffectsMio * 0.2,
+    directEffectsMio: modelDash
+      ? modelDash.private_households.savings__M__eur_per_a
+      : (runActive.privEffSum || directEffectsMio * 0.64),
+    indirectEffectsMio: allKpi.indirectEffectsMio * 0.2,
     localTurnoverMio: 0,
     localJobs: 0,
   };
 
   const ghdKpi: SectorResults = {
-    investTotalMio: runActive.indInvestSum || totalInvestMio * 0.32,
+    investTotalMio: modelDash
+      ? modelDash.industry.invest__M__eur
+      : (runActive.indInvestSum || totalInvestMio * 0.32),
     co2ReductionPercent: overallReductionPct * 1.05,
     co2ReductionTsdTonnes: co2ReductionTsdTonnes * 0.35,
-    directEffectsMio: runActive.indEffSum || directEffectsMio * 0.32,
-    indirectEffectsMio: indirectEffectsMio * 0.65,
+    directEffectsMio: modelDash
+      ? modelDash.industry.savings__M__eur_per_a
+      : (runActive.indEffSum || directEffectsMio * 0.32),
+    indirectEffectsMio: allKpi.indirectEffectsMio * 0.65,
     localTurnoverMio: 0,
     localJobs: 0,
   };
 
   const kommuneKpi: SectorResults = {
-    investTotalMio: runActive.comInvestSum || totalInvestMio * 0.06,
+    investTotalMio: modelDash
+      ? modelDash.public_administration.invest__M__eur
+      : (runActive.comInvestSum || totalInvestMio * 0.06),
     co2ReductionPercent: overallReductionPct * 1.02,
     co2ReductionTsdTonnes: co2ReductionTsdTonnes * 0.05,
-    directEffectsMio: runActive.comEffSum || directEffectsMio * 0.04,
-    indirectEffectsMio: indirectEffectsMio * 0.15,
+    directEffectsMio: modelDash
+      ? modelDash.public_administration.savings__M__eur_per_a
+      : (runActive.comEffSum || directEffectsMio * 0.04),
+    indirectEffectsMio: secResults?.public
+      ? (secResults.public.additional_taxes__M__eur_per_a || 0) + (secResults.public.concessions__M__eur_per_a || 0)
+      : (indirectEffectsMio * 0.15),
     localTurnoverMio: 0,
     localJobs: 0,
   };
+
+  // Trajectories for graphs
+  const investmentsPerYear: number[] = [];
+  const savingsPerYear: number[] = [];
+  const jobsPerYear: number[] = [];
+
+  const targetInvest = allKpi.investTotalMio;
+  const targetSavings = allKpi.directEffectsMio;
+  const rawInvestSum = runActive.totalInvestSum;
+  const rawSavingsEnd = runActive.totalEffPerYear[endIdx] || runActive.totalEffSum;
+
+  for (let i = 0; i < nYears; i++) {
+    const rawInv = runActive.totalInvestPerYear[i] || 0;
+    const inv = rawInvestSum > 0
+      ? (rawInv / rawInvestSum) * targetInvest
+      : targetInvest / nYears;
+
+    const rawSav = runActive.totalEffPerYear[i] || 0;
+    const sav = rawSavingsEnd > 0
+      ? (rawSav / rawSavingsEnd) * targetSavings
+      : targetSavings * ((i + 1) / nYears);
+
+    const j = Math.round(runActive.jobsSeries[i] || 0);
+
+    investmentsPerYear.push(inv);
+    savingsPerYear.push(sav);
+    jobsPerYear.push(j > 0 ? j : localJobs);
+  }
 
   // 6. Marginal Counterfactual Attribution for Each Measure
   const measureMetrics: Record<string, MeasurePillMetric> = {};
@@ -1073,5 +1149,6 @@ export function runSimulation(state: CityBaseline): SimulationOutput {
     },
     topMeasures,
     measureMetrics,
+    modelOutputs: modelOut,
   };
 }

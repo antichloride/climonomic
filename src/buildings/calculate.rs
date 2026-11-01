@@ -321,6 +321,7 @@ impl Buildings {
                     * &floor_A__k__m2
                     * constants::energetic_restoration::invest__m__eur_per_W_h_m2
                     * constants::energetic_restoration::grant
+                    / 1000.0
                     * heat_dmd_prev_year__k__W_h_per_m2_a
                         .is_greater(&heat_dmd_this_year__k__W_h_per_m2_a);
             }

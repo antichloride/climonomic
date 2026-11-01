@@ -223,6 +223,7 @@ export function importStateInputs(
     return { success: false, message: 'Ungültiges Datenformat. Erwartet wird ein JSON-Objekt.', modifiedCount: 0 };
   }
 
+  const rootData = data;
   // Handle if wrapped in { "inputs": { ... } } (e.g. from extraction_webfassung.py fixture)
   if (data.inputs && typeof data.inputs === 'object' && (data.inputs.buildings || data.inputs.energy)) {
     data = data.inputs;
@@ -248,6 +249,25 @@ export function importStateInputs(
       message: 'Keine gültigen Domänen (buildings, mobility, energy, economy) im JSON gefunden.',
       modifiedCount: 0,
     };
+  }
+
+  // Update time horizon if present
+  if (rootData.start_year) state.startYear = rootData.start_year;
+  if (rootData.end_year) state.endYear = rootData.end_year;
+
+  // Update measures if present
+  if (rootData.measures && typeof rootData.measures === 'object') {
+    (state as any).extractorMeasures = JSON.parse(JSON.stringify(rootData.measures));
+    const m = rootData.measures;
+    if (m.private?.heat_demand?.target_kWh_per_m2_a) {
+      state.measures.heatDmd.targetPrivate = Math.round(m.private.heat_demand.target_kWh_per_m2_a);
+    }
+    if (m.industry?.heat_demand?.target_kWh_per_m2_a) {
+      state.measures.heatDmd.targetGHD = Math.round(m.industry.heat_demand.target_kWh_per_m2_a);
+    }
+    if (m.public?.heat_demand?.target_kWh_per_m2_a) {
+      state.measures.heatDmd.targetKommune = Math.round(m.public.heat_demand.target_kWh_per_m2_a);
+    }
   }
 
   // If population is present in the imported data, sync top-level population
