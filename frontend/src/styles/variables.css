@@ -1,0 +1,110 @@
+:root {
+  /* Brand Identity: Professional Civic Tech Palette (Bespoke & Distinct) */
+  --k-color-primary-base: #4F46E5;       /* Royal Indigo */
+  --k-color-primary-dark: #4338CA;       /* Deep Indigo */
+  --k-color-primary-light: #EEF2FF;      /* Soft Indigo Tint */
+  --k-color-secondary-base: #F97316;     /* Sunset Tangerine */
+  --k-color-secondary-light: #FFF7ED;    /* Warm Peach Tint */
+  --k-color-accent-teal: #0D9488;        /* Teal accent */
+
+  /* Neutral Backgrounds & Canvas (Fresh & Elegant Cool Pearl) */
+  --k-color-canvas: #F8FAFC;             /* Modern clean canvas */
+  --k-color-surface: #FFFFFF;            /* Pure white card surface */
+  --k-color-surface-hover: #F8FAFC;
+  --k-color-section-base: #F1F5F9;       /* Slate 100 */
+  --k-color-section-border: #E2E8F0;     /* Slate 200 */
+  --k-color-section-border-focus: #6366F1;
+
+  /* Typography & Text */
+  --k-color-text-title: #0F172A;         /* Slate 900 */
+  --k-color-text-body: #334155;          /* Slate 700 */
+  --k-color-text-muted: #64748B;         /* Slate 500 */
+  --k-color-text-light: #FFFFFF;
+
+  /* Functional Status */
+  --k-color-positive: #059669;           /* Vibrant Emerald */
+  --k-color-negative: #E11D48;           /* Vivid Rose */
+  --k-color-warning: #D97706;            /* Amber */
+  --k-color-info: #0284C7;               /* Azure Blue */
+
+  /* Sector Visual Identity (Distinctive & Purpose-Built) */
+  --k-color-sector-buildings: #D97706;   /* Warm Terracotta / Amber Bronze */
+  --k-color-sector-buildings-light: #FFFBEB;
+  --k-color-sector-energy: #0284C7;      /* High-Voltage Cyan / Azure */
+  --k-color-sector-energy-light: #F0F9FF;
+  --k-color-sector-mobility: #0D9488;    /* Clean Transport Emerald-Teal */
+  --k-color-sector-mobility-light: #F0FDFA;
+  --k-color-sector-economy: #7C3AED;     /* Regal Purple */
+  --k-color-sector-economy-light: #F5F3FF;
+
+  /* Typography */
+  --k-font-primary: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --k-font-numeric: 'Lato', monospace;
+
+  /* Font sizes */
+  --k-font-size-xs: 0.75rem;     /* 12px */
+  --k-font-size-sm: 0.8125rem;   /* 13px */
+  --k-font-size-label: 0.875rem; /* 14px */
+  --k-font-size-body: 1.0rem;    /* 16px */
+  --k-font-size-h3: 1.25rem;     /* 20px */
+  --k-font-size-h2: 1.625rem;    /* 26px */
+  --k-font-size-h1: 2.125rem;    /* 34px */
+  --k-font-size-metric: 2.25rem; /* 36px */
+
+  /* Radii */
+  --k-radius-sm: 8px;
+  --k-radius-md: 12px;
+  --k-radius-lg: 16px;
+  --k-radius-pill: 9999px;
+
+  /* Elevated Modern Shadows */
+  --k-shadow-card: 0 4px 16px -2px rgba(15, 23, 42, 0.05), 0 2px 6px -2px rgba(15, 23, 42, 0.03);
+  --k-shadow-sticky: 0 12px 36px -4px rgba(79, 70, 229, 0.08), 0 4px 12px -2px rgba(15, 23, 42, 0.04);
+  --k-shadow-modal: 0 25px 50px -12px rgba(15, 23, 42, 0.25);
+  --k-shadow-pill: 0 2px 8px rgba(79, 70, 229, 0.2);
+
+  /* Transitions */
+  --k-transition-fast: 0.15s ease;
+  --k-transition-normal: 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ==========================================================================
+   DARK MODE PALETTE
+   ========================================================================== */
+[data-theme="dark"] {
+  /* Neutral Backgrounds & Canvas (Sleek Deep Obsidian Slate) */
+  --k-color-canvas: #0B0F19;             /* Ultra deep slate */
+  --k-color-surface: #141C2E;            /* Elevated card surface */
+  --k-color-surface-hover: #1A243B;
+  --k-color-section-base: #1A2338;       /* Sub-cards and inputs */
+  --k-color-section-border: #243048;     /* Crisp subtle border */
+  --k-color-section-border-focus: #818CF8;
+
+  /* Typography & Text */
+  --k-color-text-title: #F8FAFC;         /* Crisp white-slate */
+  --k-color-text-body: #CBD5E1;          /* Slate 300 */
+  --k-color-text-muted: #94A3B8;         /* Slate 400 */
+  --k-color-text-light: #FFFFFF;
+
+  /* Brand Adjustments for Dark Mode */
+  --k-color-primary-base: #6366F1;       /* Brighter Indigo for contrast */
+  --k-color-primary-dark: #4F46E5;
+  --k-color-primary-light: rgba(99, 102, 241, 0.15);
+  --k-color-secondary-base: #FB923C;     /* Luminous Orange */
+  --k-color-secondary-light: rgba(251, 146, 60, 0.15);
+
+  /* Sector Visual Identity in Dark Mode */
+  --k-color-sector-buildings: #D97706;
+  --k-color-sector-buildings-light: rgba(217, 119, 6, 0.15);
+  --k-color-sector-energy: #0284C7;
+  --k-color-sector-energy-light: rgba(2, 132, 199, 0.15);
+  --k-color-sector-mobility: #0D9488;
+  --k-color-sector-mobility-light: rgba(13, 148, 136, 0.15);
+  --k-color-sector-economy: #8B5CF6;
+  --k-color-sector-economy-light: rgba(139, 92, 246, 0.15);
+
+  /* Shadows for Dark Mode */
+  --k-shadow-card: 0 4px 20px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.2);
+  --k-shadow-sticky: 0 12px 36px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(99, 102, 241, 0.2);
+  --k-shadow-modal: 0 25px 60px rgba(0, 0, 0, 0.7);
+}
