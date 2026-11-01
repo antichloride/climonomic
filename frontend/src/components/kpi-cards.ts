@@ -11,13 +11,14 @@ export function renderKpiDashboard(): string {
   const filter = store.getFilter();
   const s = store.getState();
   const kpi = out?.kpis[filter] || {
-    investTotalMio: 354,
-    co2ReductionPercent: 111.2,
-    co2ReductionTsdTonnes: 211,
-    directEffectsMio: 740,
-    indirectEffectsMio: 28,
-    localTurnoverMio: 142,
-    localJobs: 43,
+    investTotalMio: 104,
+    co2ReductionPercent: 100.0,
+    co2ReductionTsdTonnes: 106.6,
+    directEffectsMio: 11,
+    indirectEffectsMio: 0.3,
+    localTurnoverMio: 7.2,
+    localJobs: 44,
+    roiPercent: 10.6,
   };
 
   const isAll = filter === 'all';
@@ -44,7 +45,7 @@ export function renderKpiDashboard(): string {
             <span title="Einmalige Gesamtinvestition across period">ⓘ</span>
           </div>
           <div class="scorecard-value" id="val-kpi-invest">
-            ${Math.round(kpi.investTotalMio)} <span style="font-size: 1rem; font-weight: 600;">Mio €</span>
+            ${kpi.investTotalMio < 10 ? kpi.investTotalMio.toFixed(1) : Math.round(kpi.investTotalMio)} <span style="font-size: 1rem; font-weight: 600;">Mio €</span>
           </div>
           <div class="scorecard-sub" id="val-kpi-invest-sub">kumuliert bis ${s.endYear}</div>
         </div>
@@ -66,9 +67,9 @@ export function renderKpiDashboard(): string {
             <span title="Vermiedene Energiekosten & Effizienzgewinne">ⓘ</span>
           </div>
           <div class="scorecard-value" id="val-kpi-direct">
-            ${Math.round(kpi.directEffectsMio)} <span style="font-size: 1rem; font-weight: 600;">Mio €</span>
+            ${kpi.directEffectsMio < 10 ? kpi.directEffectsMio.toFixed(1) : Math.round(kpi.directEffectsMio)} <span style="font-size: 1rem; font-weight: 600;">Mio €/a</span>
           </div>
-          <div class="scorecard-sub">Netto-Geldeinsparungen</div>
+          <div class="scorecard-sub" id="val-kpi-direct-sub">${(kpi.roiPercent ?? 10.6).toFixed(1)} % jährliche Rendite</div>
         </div>
 
         <div class="scorecard">
@@ -77,7 +78,7 @@ export function renderKpiDashboard(): string {
             <span title="Gewerbesteuern, Einkommensteuern & Handwerksgewinne">ⓘ</span>
           </div>
           <div class="scorecard-value" id="val-kpi-indirect">
-            ${Math.round(kpi.indirectEffectsMio)} <span style="font-size: 1rem; font-weight: 600;">Mio €</span>
+            ${kpi.indirectEffectsMio < 10 ? kpi.indirectEffectsMio.toFixed(1) : Math.round(kpi.indirectEffectsMio)} <span style="font-size: 1rem; font-weight: 600;">Mio €/a</span>
           </div>
           <div class="scorecard-sub">kommunale Steuern & Erträge</div>
         </div>
@@ -86,7 +87,7 @@ export function renderKpiDashboard(): string {
       <!-- Extra local economy stats (visible when 'all' selected) -->
       <div class="economy-stats-bar" id="economy-stats-bar" style="display: ${isAll ? 'flex' : 'none'};">
         <div>
-          <div class="stat-item-val" id="val-kpi-turnover">${Math.round(kpi.localTurnoverMio)} Mio €</div>
+          <div class="stat-item-val" id="val-kpi-turnover">${kpi.localTurnoverMio < 10 ? kpi.localTurnoverMio.toFixed(1) : Math.round(kpi.localTurnoverMio)} Mio €/a</div>
           <div class="stat-item-lbl">Umsatz lokales Handwerk</div>
         </div>
         <div style="width: 1px; background: var(--k-color-section-border);"></div>
@@ -144,6 +145,11 @@ export function updateKpiDashboard() {
     elInvestSub.textContent = `kumuliert bis ${s.endYear}`;
   }
 
+  const elDirectSub = document.getElementById('val-kpi-direct-sub');
+  if (elDirectSub) {
+    elDirectSub.textContent = `${(kpi.roiPercent ?? 10.6).toFixed(1)} % jährliche Rendite`;
+  }
+
   // 3. Keep select sector synced if changed from outside
   const select = document.getElementById('select-sector-view') as HTMLSelectElement | null;
   if (select && document.activeElement !== select && select.value !== filter) {
@@ -177,19 +183,19 @@ export function animateKpiNumbers() {
   const duration = 160;
 
   if (elInvest) {
-    animateValue(elInvest, kpi.investTotalMio, duration, 0, '<span style="font-size: 1rem; font-weight: 600;">Mio €</span>');
+    animateValue(elInvest, kpi.investTotalMio, duration, kpi.investTotalMio < 10 ? 1 : 0, '<span style="font-size: 1rem; font-weight: 600;">Mio €</span>');
   }
   if (elCo2) {
     animateValue(elCo2, kpi.co2ReductionPercent, duration, 1, '<span style="font-size: 1.1rem; font-weight: 700;">%</span>');
   }
   if (elDirect) {
-    animateValue(elDirect, kpi.directEffectsMio, duration, 0, '<span style="font-size: 1rem; font-weight: 600;">Mio €</span>');
+    animateValue(elDirect, kpi.directEffectsMio, duration, kpi.directEffectsMio < 10 ? 1 : 0, '<span style="font-size: 1rem; font-weight: 600;">Mio €/a</span>');
   }
   if (elIndirect) {
-    animateValue(elIndirect, kpi.indirectEffectsMio, duration, 0, '<span style="font-size: 1rem; font-weight: 600;">Mio €</span>');
+    animateValue(elIndirect, kpi.indirectEffectsMio, duration, kpi.indirectEffectsMio < 10 ? 1 : 0, '<span style="font-size: 1rem; font-weight: 600;">Mio €/a</span>');
   }
   if (elTurnover) {
-    animateValue(elTurnover, kpi.localTurnoverMio, duration, 0, 'Mio €');
+    animateValue(elTurnover, kpi.localTurnoverMio, duration, kpi.localTurnoverMio < 10 ? 1 : 0, 'Mio €/a');
   }
   if (elJobs) {
     animateValue(elJobs, kpi.localJobs, duration, 0, 'Jobs', '+');

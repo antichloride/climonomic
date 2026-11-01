@@ -779,11 +779,14 @@ describe('Counterfactual Simulation Verification', () => {
     const out = runSimulation(state);
     console.log('--- FOR POPULATION = 11.238 (11,238 Ew) ---');
     console.log('Investitionen Total:', out.kpis.all.investTotalMio, 'Mio. €');
-    console.log('Direkte Effekte:', out.kpis.all.effectsPerYearMio, 'Mio. €/a');
+    console.log('Direkte Effekte:', out.kpis.all.directEffectsMio, 'Mio. €/a');
     console.log('Investitionen Kommune:', out.kpis.kommune.investTotalMio, 'Mio. €');
-    console.log('Direkte Effekte Kommune:', out.kpis.kommune.effectsPerYearMio, 'Mio. €/a');
+    console.log('Direkte Effekte Kommune:', out.kpis.kommune.directEffectsMio, 'Mio. €/a');
     console.log('CO2 Reduktion:', out.kpis.all.co2ReductionTsdTonnes, 'kt');
     expect(out.kpis.all.investTotalMio).toBeCloseTo(103.8, 1);
+    expect(out.kpis.all.directEffectsMio).toBeCloseTo(11.05, 1);
+    expect(out.kpis.all.roiPercent).toBeCloseTo(10.65, 1);
+    expect(out.kpis.all.localJobs).toBe(44);
   });
 });
 

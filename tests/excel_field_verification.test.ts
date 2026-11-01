@@ -1,9 +1,15 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
 import { createDefaultState, importStateInputs, getBaselineValueForId } from '../frontend/src/baseline-data';
 import { DEFAULT_EXTRACTOR_INPUTS } from '../frontend/src/default-inputs';
 import { Calculator } from '../pkg/climcalc_core.js';
+import initWasm from '../pkg-web/climcalc_core.js';
+
+beforeAll(async () => {
+  const wasmBuffer = fs.readFileSync(path.resolve(__dirname, '../pkg-web/climcalc_core_bg.wasm'));
+  await initWasm({ module_or_path: wasmBuffer });
+});
 
 describe('Excel Field Verification Suite', () => {
   const fixturePath = path.resolve(__dirname, 'fixtures/webfassung_260630.json');
@@ -109,6 +115,19 @@ describe('Excel Field Verification Suite', () => {
     // Verify direct effects matches 11,053 Mio. €/a within 0.1% tolerance
     const expectedSavings = fixture.expected_outputs.summary_dashboard.subtotal_private_industry_public.savings__M__eur_per_a;
     expect(outputs.summary_dashboard.subtotal_private_industry_public.savings__M__eur_per_a).toBeCloseTo(expectedSavings, 0);
+  });
+
+  it('diagnoses runSimulation outputs for Kosten, Rendite, and Arbeitsplätze', async () => {
+    const { runSimulation } = await import('../frontend/src/wasm-engine');
+    const state = createDefaultState();
+    const simOut = runSimulation(state);
+    console.log('SimOut KPIs (all):', simOut.kpis.all);
+    console.log('SimOut KPIs (private):', simOut.kpis.private);
+    console.log('SimOut KPIs (ghd):', simOut.kpis.ghd);
+    console.log('SimOut KPIs (kommune):', simOut.kpis.kommune);
+    console.log('SimOut costsTrajectory (investments):', simOut.costsTrajectory.investments);
+    console.log('SimOut costsTrajectory (directSavings):', simOut.costsTrajectory.directSavings);
+    console.log('SimOut jobsTrajectory:', simOut.jobsTrajectory.localJobs);
   });
 
   it('verifies measures extraction completeness across all sectors and utility in the Excel workbook', () => {

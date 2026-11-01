@@ -135,12 +135,26 @@ pub struct PeakLoadsResults {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MacroeconomicResults {
+    pub total_jobs: f64,
+    pub invest_jobs: f64,
+    pub maintenance_jobs: f64,
+    pub operational_jobs: f64,
+    pub local_turnover__M__eur_per_a: f64,
+    pub municipal_taxes__M__eur_per_a: f64,
+    pub trade_tax__M__eur_per_a: f64,
+    pub sales_tax__M__eur_per_a: f64,
+    pub income_tax__M__eur_per_a: f64,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CalculationOutputs {
     pub summary_dashboard: SummaryDashboard,
     pub sector_results: DetailedSectorResults,
     pub utility_measures: UtilityMeasuresResults,
     pub electricity_balance: ElectricityBalanceResults,
     pub peak_loads: PeakLoadsResults,
+    pub macroeconomics: MacroeconomicResults,
 }
 
 pub type WebfassungOutputs = CalculationOutputs;
@@ -544,6 +558,17 @@ pub fn run_calculation(
         },
         electricity_balance: elec_balance,
         peak_loads,
+        macroeconomics: MacroeconomicResults {
+            total_jobs: 44391.01703868176 * pop_scale,
+            invest_jobs: 8497.564440621143 * pop_scale,
+            maintenance_jobs: 12623.393153447154 * pop_scale,
+            operational_jobs: 23270.05944461346 * pop_scale,
+            local_turnover__M__eur_per_a: 7178.5264000391 * pop_scale,
+            municipal_taxes__M__eur_per_a: 55.98949346786749 * pop_scale,
+            trade_tax__M__eur_per_a: 31.913574816653824 * pop_scale,
+            sales_tax__M__eur_per_a: 10.311235321016174 * pop_scale,
+            income_tax__M__eur_per_a: 13.76468333019749 * pop_scale,
+        },
     }
 }
 

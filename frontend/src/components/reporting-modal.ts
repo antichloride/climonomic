@@ -13,13 +13,14 @@ export function openReportingModal() {
   const out = store.getOutput();
   const filter = store.getFilter();
   const kpi = out?.kpis[filter] || {
-    investTotalMio: 354,
-    co2ReductionPercent: 111.2,
-    co2ReductionTsdTonnes: 211,
-    directEffectsMio: 740,
-    indirectEffectsMio: 28,
-    localTurnoverMio: 142,
-    localJobs: 43,
+    investTotalMio: 104,
+    co2ReductionPercent: 100.0,
+    co2ReductionTsdTonnes: 106.6,
+    directEffectsMio: 11.0,
+    indirectEffectsMio: 0.3,
+    localTurnoverMio: 7.2,
+    localJobs: 44,
+    roiPercent: 10.6,
   };
 
   const measures = out?.topMeasures || [];
@@ -43,7 +44,7 @@ export function openReportingModal() {
         <div>
           <div style="font-size: 0.8rem; font-weight: 700; color: var(--k-color-text-muted); text-transform: uppercase;">Investitionen</div>
           <div class="num" style="font-size: 1.8rem; font-weight: 800; color: var(--k-color-text-title);">
-            +${Math.round(kpi.investTotalMio)} Mio €
+            ${kpi.investTotalMio < 10 ? kpi.investTotalMio.toFixed(1) : Math.round(kpi.investTotalMio)} Mio €
           </div>
           <div style="font-size: 0.75rem; color: var(--k-color-text-muted);">Einmalige Gesamtkosten</div>
         </div>
@@ -51,15 +52,15 @@ export function openReportingModal() {
         <div>
           <div style="font-size: 0.8rem; font-weight: 700; color: var(--k-color-text-muted); text-transform: uppercase;">Direkte Effekte</div>
           <div class="num" style="font-size: 1.8rem; font-weight: 800; color: var(--k-color-primary-base);">
-            +${Math.round(kpi.directEffectsMio)} Mio €
+            ${kpi.directEffectsMio < 10 ? kpi.directEffectsMio.toFixed(1) : Math.round(kpi.directEffectsMio)} Mio €/a
           </div>
-          <div style="font-size: 0.75rem; color: var(--k-color-text-muted);">Eingesparte Brennstoffkosten</div>
+          <div style="font-size: 0.75rem; color: var(--k-color-text-muted);">${(kpi.roiPercent ?? 10.6).toFixed(1)} % jährliche Rendite</div>
         </div>
 
         <div>
           <div style="font-size: 0.8rem; font-weight: 700; color: var(--k-color-text-muted); text-transform: uppercase;">Indirekte Effekte</div>
           <div class="num" style="font-size: 1.8rem; font-weight: 800; color: var(--k-color-text-title);">
-            +${Math.round(kpi.indirectEffectsMio)} Mio €
+            ${kpi.indirectEffectsMio < 10 ? kpi.indirectEffectsMio.toFixed(1) : Math.round(kpi.indirectEffectsMio)} Mio €/a
           </div>
           <div style="font-size: 0.75rem; color: var(--k-color-text-muted);">Gewerbe- & Einkommensteuern</div>
         </div>
@@ -67,7 +68,7 @@ export function openReportingModal() {
         <div>
           <div style="font-size: 0.8rem; font-weight: 700; color: var(--k-color-text-muted); text-transform: uppercase;">Umsatzsteigerung</div>
           <div class="num" style="font-size: 1.8rem; font-weight: 800; color: #1E293B;">
-            +${Math.round(kpi.localTurnoverMio)} Mio €
+            ${kpi.localTurnoverMio < 10 ? kpi.localTurnoverMio.toFixed(1) : Math.round(kpi.localTurnoverMio)} Mio €/a
           </div>
           <div style="font-size: 0.75rem; color: var(--k-color-text-muted);">Lokale Wertschöpfung</div>
         </div>
