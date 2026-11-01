@@ -19,26 +19,31 @@ impl Economy {
         let invest_heat_sources__M__eur_per_a =
             buildings.invest_heat_sources__M__eur_per_a().get_year(year).sum();
 
+        // @eq: invest_heating_material__M__eur_per_a = invest_heat_sources__M__eur_per_a * heating_heatpump
         let invest_heating_material =
             invest_heat_sources__M__eur_per_a * constants::material::invest_local::heating_heatpump;
         self.invest_heating_material__M__eur_per_a
             .set_year_value(year, invest_heating_material);
 
+        // @eq: invest_heating_work__M__eur_per_a = invest_heat_sources__M__eur_per_a * (1.0 - heating_heatpump)
         let invest_heating_work = invest_heat_sources__M__eur_per_a
             * (1.0 - constants::material::invest_local::heating_heatpump);
         self.invest_heating_work__M__eur_per_a
             .set_year_value(year, invest_heating_work);
 
+        // @eq: turnover_heating_crafting_local__M__eur_per_a = invest_heating_work__M__eur_per_a * loacal_value_add
         let turnover_heating_crafting_local = invest_heating_work
             * constants::invest_work::loacal_value_add::heating_heatpump;
         self.turnover_heating_crafting_local__M__eur_per_a
             .set_year_value(year, turnover_heating_crafting_local);
 
+        // @eq: turnover_heating_crafting_national__M__eur_per_a = invest_heating_work__M__eur_per_a * national_added_value
         let turnover_heating_crafting_national = invest_heating_work
             * constants::invest_work::national_added_value::heating_heatpump;
         self.turnover_heating_crafting_national__M__eur_per_a
             .set_year_value(year, turnover_heating_crafting_national);
 
+        // @eq: turnover_heating_production_national__M__eur_per_a = invest_heating_material__M__eur_per_a * heating_heatpump
         let turnover_heating_production_national = invest_heating_material
             * constants::material::invest_national::heating_heatpump;
         self.turnover_heating_production_national__M__eur_per_a
@@ -231,9 +236,11 @@ impl Economy {
                 * constants::invest_work::loacal_value_add::solar_landscape;
         self.turnover_local__M__eur_per_a.set_year_value(year, turnover_local);
 
+        // @eq: revenue_local__M__eur_per_a = turnover_local__M__eur_per_a * revenue_local_part
         let revenue_local = turnover_local * constants::revenue_local_part;
         self.revenue_local__M__eur_per_a.set_year_value(year, revenue_local);
 
+        // @eq: turnover_national__M__eur_per_a = invest_heat_sources__M__eur_per_a + invest_energetic_renovation__M__eur_per_a + sol_rf_invest__M__eur_per_a + sol_os_invest__M__eur_per_a
         let turnover_national = invest_heat_sources__M__eur_per_a
             + invest_energetic_renovation__M__eur_per_a
             + sol_rf_invest__M__eur_per_a
@@ -241,6 +248,7 @@ impl Economy {
         self.turnover_national__M__eur_per_a
             .set_year_value(year, turnover_national);
 
+        // @eq: turnover_tax_local__M__eur_per_a = turnover_local__M__eur_per_a * turnover_tax * turnover_tax_local_part
         let turnover_tax_local = turnover_local
             * constants::tax::turnover_tax
             * constants::tax::turnover_tax_local_part;
@@ -251,14 +259,17 @@ impl Economy {
         self.turnover_tax_national__M__eur_per_a
             .set_year_value(year, turnover_tax_national);
 
+        // @eq: business_tax_local__M__eur_per_a = turnover_local__M__eur_per_a * business_tax
         let business_tax_local = turnover_local * constants::tax::business_tax;
         self.business_tax_local__M__eur_per_a
             .set_year_value(year, business_tax_local);
 
+        // @eq: business_tax_national__M__eur_per_a = turnover_national__M__eur_per_a * business_tax
         let business_tax_national = turnover_national * constants::tax::business_tax;
         self.business_tax_national__M__eur_per_a
             .set_year_value(year, business_tax_national);
 
+        // @eq: corporate_tax_national__M__eur_per_a = turnover_national__M__eur_per_a * corporate_tax
         let corporate_tax_national = turnover_national * constants::tax::corporate_tax;
         self.corporate_tax_national__M__eur_per_a
             .set_year_value(year, corporate_tax_national);

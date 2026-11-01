@@ -70,10 +70,12 @@ impl Stakeholders {
         self.private_effect_of_measures__M__eur_per_a.set_year_value(year, private_effect_of_measures);
 
         // Row 421: Cash Flow Netto Privat
+        // @eq: private_cash_flow_netto__M__eur_per_a = private_effect_of_measures__M__eur_per_a + private_invest__M__eur_per_a
         let private_cash_flow_netto = private_effect_of_measures + private_invest;
         self.private_cash_flow_netto__M__eur_per_a.set_year_value(year, private_cash_flow_netto);
 
         // Row 423: Gewinne GHD
+        // @eq: industry_profit_from_measures__M__eur_per_a = turnover_local__M__eur_per_a * revenue_margin
         let industry_profit = economy.turnover_local__M__eur().get_year(year)
             * constants::economy::revenue_margin;
         self.industry_profit_from_measures__M__eur_per_a.set_year_value(year, industry_profit);
@@ -113,6 +115,7 @@ impl Stakeholders {
         self.industry_effect_of_measures__M__eur_per_a.set_year_value(year, industry_effect_of_measures);
 
         // Row 426: Cash Flow Netto GHD
+        // @eq: industry_cash_flow_netto__M__eur_per_a = industry_profit_from_measures__M__eur_per_a + industry_invest__M__eur_per_a + industry_effect_of_measures__M__eur_per_a
         let industry_cash_flow_netto = industry_profit + industry_invest + industry_effect_of_measures;
         self.industry_cash_flow_netto__M__eur_per_a.set_year_value(year, industry_cash_flow_netto);
 
@@ -151,11 +154,13 @@ impl Stakeholders {
         self.community_effect_of_measures__M__eur_per_a.set_year_value(year, community_effect_of_measures);
 
         // Row 430: Mehr-Einnahmen aus Steuern und Abgaben Kommune
+        // @eq: community_tax_income_from_measures__M__eur_per_a = income_tax_local__M__eur_per_a + business_tax_local__M__eur_per_a
         let community_tax_income_from_measures = economy.income_tax_local__M__eur().get_year(year)
             + economy.business_tax_local__M__eur().get_year(year);
         self.community_tax_income_from_measures__M__eur_per_a.set_year_value(year, community_tax_income_from_measures);
 
         // Row 431: Cash Flow Netto Kommune
+        // @eq: community_cash_flow_netto__M__eur_per_a = community_tax_income_from_measures__M__eur_per_a + community_effect_of_measures__M__eur_per_a + community_invest__M__eur_per_a
         let community_cash_flow_netto = community_tax_income_from_measures
             + community_effect_of_measures
             + community_invest;

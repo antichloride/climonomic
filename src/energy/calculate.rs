@@ -37,6 +37,7 @@ impl Energy {
             .set_year_values(year, &sol_rf_nrg__G__W_h_per_a);
 
         // Excel row 257: sol_rf_nrg * sol_rf_self_cnsmp_part
+        // @eq: sol_rf_self_cnsmp__G__W_h_per_a = sol_rf_nrg__G__W_h_per_a * sol_rf_self_cnsmp_part
         let sol_rf_self_cnsmp__G__W_h_per_a =
             &sol_rf_nrg__G__W_h_per_a * &sol_rf_self_cnsmp_part;
         self.results
@@ -148,6 +149,7 @@ impl Energy {
         }
 
         // Excel row 310: generation * 0.07037
+        // @eq: sol_os_turnover_buyback__M__eur_per_a = sol_os_nrg__G__W_h_per_a * buyback_price__m__eur_per_W_h
         let sol_os_turnover_buyback__M__eur_per_a = &sol_os_nrg__G__W_h_per_a
             * constants::solar_landscape.buyback_price__m__eur_per_W_h;
         self.results
@@ -162,6 +164,7 @@ impl Energy {
             .set_year_values(year, &sol_os_prod_costs__M__eur_per_a);
 
         // Excel row 313: buyback - prod_costs (profit = 0 in v5)
+        // @eq: sol_os_revenue__M__eur_per_a = sol_os_turnover_buyback__M__eur_per_a - sol_os_prod_costs__M__eur_per_a
         let sol_os_revenue__M__eur_per_a =
             &sol_os_turnover_buyback__M__eur_per_a - &sol_os_prod_costs__M__eur_per_a;
         self.results
@@ -226,12 +229,14 @@ impl Energy {
                 .set_year_values(year, &wind_om__M__eur_per_a);
         }
 
+        // @eq: wind_turnover_buyback__M__eur_per_a = wind_nrg__G__W_h_per_a * buyback_price__m__eur_per_W_h
         let wind_turnover_buyback__M__eur_per_a =
             &wind_nrg__G__W_h_per_a * constants::wind_onshore.buyback_price__m__eur_per_W_h;
         self.results
             .wind_turnover_buyback__M__eur_per_a
             .set_year_values(year, &wind_turnover_buyback__M__eur_per_a);
 
+        // @eq: wind_revenue__M__eur_per_a = wind_turnover_buyback__M__eur_per_a - wind_om__M__eur_per_a
         let wind_revenue__M__eur_per_a =
             &wind_turnover_buyback__M__eur_per_a - &wind_om__M__eur_per_a;
         self.results
@@ -248,6 +253,7 @@ impl Energy {
         let renewable_nrg_price__m__eur_per_W_h =
             self.inputs.renewable_nrg_price__m__eur_per_W_h.get_year(year);
 
+        // @eq: prchsd_renewable_nrg__M__eur_per_a = prchsd_renewable_nrg__G__W_h_per_a * renewable_nrg_price__m__eur_per_W_h
         let prchsd_renewable_nrg__M__eur_per_a =
             &prchsd_renewable_nrg__G__W_h_per_a * &renewable_nrg_price__m__eur_per_W_h;
         self.results
@@ -301,6 +307,7 @@ impl Energy {
         let nrg_mix_price__m__eur_per_W_h =
             self.inputs.nrg_mix_price__m__eur_per_W_h.get_year(year);
 
+        // @eq: prchsd_nrg_mix_costs__M__eur_per_a = prchsd_nrg_mix__G__W_h_per_a * nrg_mix_price__m__eur_per_W_h
         let prchsd_nrg_mix_costs__M__eur_per_a = &prchsd_nrg_mix__G__W_h_per_a
             * &nrg_mix_price__m__eur_per_W_h;
         self.results
@@ -324,6 +331,7 @@ impl Energy {
             .set_year_values(year, &sol_rf_costs__M__eur_per_a);
 
         // Excel row 280: sol_rf_costs / sol_rf_self_cnsmp
+        // @eq: sol_rf_costs__eur_per_kWh = sol_rf_costs__M__eur_per_a / sol_rf_self_cnsmp__G__W_h_per_a
         let mut sol_rf_costs__eur_per_kWh = &sol_rf_costs__M__eur_per_a / &sol_rf_self_cnsmp__G__W_h_per_a;
         if sol_rf_self_cnsmp__G__W_h_per_a.private == 0.0 { sol_rf_costs__eur_per_kWh.private = 0.0; }
         if sol_rf_self_cnsmp__G__W_h_per_a.industry == 0.0 { sol_rf_costs__eur_per_kWh.industry = 0.0; }

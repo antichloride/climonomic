@@ -37,6 +37,7 @@ impl Buildings {
         let hot_water_dmd__k__W_h_per_m2_a = inputs.hot_water_dmd__k__W_h_per_m2_a.get_year(year);
         let elec_dmd_capita__k_W_h_per_a = inputs.elec_dmd_capita__k_W_h_per_a.get_year(year);
 
+        // @eq: floor_A__k__m2 = floor_A_building__m2 * n_buildings * 1e-3
         let floor_A__k__m2 = &floor_A_building__m2 * &n_buildings * 1e-3;
         results.floor_A__k__m2.set_year_values(year, &floor_A__k__m2);
 
@@ -48,6 +49,7 @@ impl Buildings {
             .set_year_values(year, &hot_water_dmd__k__W_h_per_m2_a);
 
         // Excel row 29: (C16*C21 + C3*C25) / 1000
+        // @eq: total_heat_dmd__G__W_h_per_a = (n_inhabitants__k__ * hot_water_dmd__k__W_h_per_m2_a + heat_dmd__k__W_h_per_m2_a * floor_A__k__m2) * 1e-3
         let total_heat_dmd__G__W_h_per_a = (&n_inhabitants__k__ * &hot_water_dmd__k__W_h_per_m2_a
             + &heat_dmd__k__W_h_per_m2_a * &floor_A__k__m2)
             * 1e-3;
@@ -55,6 +57,7 @@ impl Buildings {
             .total_heat_dmd__G__W_h_per_a
             .set_year_values(year, &total_heat_dmd__G__W_h_per_a);
 
+        // @eq: elec_dmd__G__W_h_per_a = elec_dmd_capita__k_W_h_per_a * n_inhabitants__k__ * 1e-3
         let elec_dmd__G__W_h_per_a =
             &elec_dmd_capita__k_W_h_per_a * &n_inhabitants__k__ * 1e-3;
         results
@@ -62,6 +65,7 @@ impl Buildings {
             .set_year_values(year, &elec_dmd__G__W_h_per_a);
 
         // Energy Consumption of different heating types
+        // @eq: total_heat_dmd__M__W_h_per_m2_a = total_heat_dmd__G__W_h_per_a / floor_A__k__m2
         let total_heat_dmd__M__W_h_per_m2_a =
             &total_heat_dmd__G__W_h_per_a / &floor_A__k__m2;
 
@@ -83,6 +87,7 @@ impl Buildings {
 
                 let A_heat_other__k__m2 =
                     compute_A_heat_other__k__m2(&self.inputs, year);
+                // @eq: cnsmp_other__G__W_h_per_a = A_heat_other__k__m2 * total_heat_dmd__M__W_h_per_m2_a
                 let cnsmp_other__G__W_h_per_a = &A_heat_other__k__m2
                     * &total_heat_dmd__M__W_h_per_m2_a
                     / constants::other.efficency;
@@ -91,6 +96,7 @@ impl Buildings {
 
                 let price_other_output_nrg__m__eur_per_W_h =
                     self.inputs.price_other_output_nrg__m__eur_per_W_h.get_year(year);
+                // @eq: costs_other__M__eur_per_a = cnsmp_other__G__W_h_per_a * price_other_output_nrg__m__eur_per_W_h
                 let costs_other__M__eur_per_a = &cnsmp_other__G__W_h_per_a
                     * price_other_output_nrg__m__eur_per_W_h;
                 results.costs_other__M__eur_per_a
@@ -127,6 +133,7 @@ impl Buildings {
         }
 
         // Excel row 79: (C69 + C74) / 10.0 (in Mio. L)
+        // @eq: cnsmp_oil__M__L_per_a = (cnsmp_oil__G__W_h_per_a + cnsmp_oil_condensing__G__W_h_per_a) / energy_density__k__W_h_per_L
         let cnsmp_oil__M__L_per_a =
             (&results.cnsmp_oil__G__W_h_per_a.get_year(year) + &results.cnsmp_oil_condensing__G__W_h_per_a.get_year(year))
                 / constants::EnergySource::oil::energy_density__k__W_h_per_L;
@@ -135,6 +142,7 @@ impl Buildings {
             .set_year_values(year, &cnsmp_oil__M__L_per_a);
 
         // Excel row 89: C84 / 5.0 (in Mio. m3)
+        // @eq: cnsmp_gas__M__m3_per_a = cnsmp_gas__G__W_h_per_a / energy_density__k__W_h_per_m3
         let cnsmp_gas__M__m3_per_a = &results.cnsmp_gas__G__W_h_per_a.get_year(year)
             / constants::EnergySource::gas::energy_density__k__W_h_per_m3;
         results
@@ -143,6 +151,7 @@ impl Buildings {
 
         let district_heating_renewable_part =
             self.inputs.district_heating_renewable_part.get_year(year);
+        // @eq: cnsmp_gas_district_heating__M__m3_per_a = (1.0 - district_heating_renewable_part) * cnsmp_district_heating__G__W_h_per_a / energy_density__k__W_h_per_m3
         let cnsmp_gas_district_heating__M__m3_per_a = (1.0 - &district_heating_renewable_part)
             * &results.cnsmp_district_heating__G__W_h_per_a.get_year(year)
             / constants::EnergySource::gas::energy_density__k__W_h_per_m3;
@@ -179,16 +188,19 @@ impl Buildings {
         let price_district_heating__m__eur_per_W_h =
             self.inputs.price_district_heating__m__eur_per_W_h.get_year(year);
 
+        // @eq: costs_oil__M__eur_per_a = cnsmp_oil__M__L_per_a * price_oil__eur_per_L
         let costs_oil__M__eur_per_a = &cnsmp_oil__M__L_per_a * price_oil__eur_per_L;
         results
             .costs_oil__M__eur_per_a
             .set_year_values(year, &costs_oil__M__eur_per_a);
 
+        // @eq: costs_gas__M__eur_per_a = cnsmp_gas__M__m3_per_a * price_gas__eur_per_m3
         let costs_gas__M__eur_per_a = &cnsmp_gas__M__m3_per_a * price_gas__eur_per_m3;
         results
             .costs_gas__M__eur_per_a
             .set_year_values(year, &costs_gas__M__eur_per_a);
 
+        // @eq: costs_client_district_heating__M__eur_per_a = cnsmp_district_heating__G__W_h_per_a * price_district_heating__m__eur_per_W_h
         let costs_client_district_heating__M__eur_per_a =
             &results.cnsmp_district_heating__G__W_h_per_a.get_year(year) * price_district_heating__m__eur_per_W_h;
         results
@@ -282,6 +294,7 @@ impl Buildings {
             let heat_dmd_prev_year__k__W_h_per_m2_a =
                 inputs.heat_dmd__k__W_h_per_m2_a.get_year(year - 1);
 
+            // @eq: invest_energetic_renovation__M__eur_per_a = (heat_dmd_prev_year__k__W_h_per_m2_a - heat_dmd_this_year__k__W_h_per_m2_a) * invest__m__eur_per_W_h_m2 * floor_A__k__m2 / 1000.0
             let invest_energetic_renovation__M__eur_per_a = (&heat_dmd_prev_year__k__W_h_per_m2_a
                 - &heat_dmd_this_year__k__W_h_per_m2_a)
                 * constants::energetic_restoration::invest__m__eur_per_W_h_m2
@@ -307,6 +320,7 @@ impl Buildings {
                 .set_year_values(year, &grant_energetic_renovation__M__eur_per_a);
 
             // Excel row 153: Invest Total = Invest Heat Sources + Invest Renovation
+            // @eq: invest_total__M__eur_per_a = invest_heat_sources__M__eur_per_a + invest_energetic_renovation__M__eur_per_a
             let invest_total__M__eur_per_a = &invest_heat_sources__M__eur_per_a
                 + &invest_energetic_renovation__M__eur_per_a;
             results
@@ -314,6 +328,7 @@ impl Buildings {
                 .set_year_values(year, &invest_total__M__eur_per_a);
 
             // Excel row 174: Grant Total = Grant Heat Sources + Grant Renovation
+            // @eq: grant_total__M__eur_per_a = grant_heat_sources__M__eur_per_a + grant_energetic_renovation__M__eur_per_a
             let grant_total__M__eur_per_a = &grant_heat_sources__M__eur_per_a
                 + &grant_energetic_renovation__M__eur_per_a;
             results
@@ -342,6 +357,7 @@ impl Buildings {
         let nrg_own_mix_price__m__eur_per_W_h =
             nrg_own_mix_price__m__eur_per_W_h.get_year(year);
 
+        // @eq: costs_heat_pump__M__eur = cnsmp_elec_heat_pump__G__W_h_per_a * nrg_own_mix_price__m__eur_per_W_h * (1.0 - evu_discount_heat_pump)
         let mut costs_heat_pump__M__eur = &cnsmp_elec_heat_pump__G__W_h_per_a
             * &nrg_own_mix_price__m__eur_per_W_h
             * (1.0 - evu_discount_heat_pump);
@@ -360,6 +376,7 @@ impl Buildings {
             .costs_client_district_heating__M__eur_per_a
             .get_year(year);
         let costs_other__M__eur_per_a = self.results.costs_other__M__eur_per_a.get_year(year);
+        // @eq: costs_total__M__eur = costs_oil__M__eur_per_a + costs_gas__M__eur_per_a + costs_client_district_heating__M__eur_per_a + costs_heat_pump__M__eur + costs_other__M__eur_per_a
         let costs_total__M__eur = costs_oil__M__eur_per_a
             + costs_gas__M__eur_per_a
             + costs_client_district_heating__M__eur_per_a
@@ -375,6 +392,7 @@ impl Buildings {
         let cnsmp_gas__G__W_h_per_a = self.results.cnsmp_gas__G__W_h_per_a.get_year(year);
 
         // Excel row 352: D79 * 3.0
+        // @eq: ems_oil__k__to_coe_per_a = cnsmp_oil__M__L_per_a * emission__kg_coe_per_L
         let mut ems_oil__k__to_coe_per_a =
             cnsmp_oil__M__L_per_a * constants::EnergySource::oil::emission__kg_coe_per_L;
         // In Excel row 354, cell D354 has formula =D81*'Eingabe Ist'!$M$15 (schools only)
