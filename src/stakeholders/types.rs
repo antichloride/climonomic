@@ -3,7 +3,7 @@
 use crate::result::Results;
 
 macro_rules! implement_stakeholders {
-    ($($field:ident),*) => {
+    ($($field:ident),* $(,)?) => {
         #[derive(serde::Serialize)]
         pub struct Stakeholders {
             #[serde(skip)]
@@ -40,7 +40,6 @@ macro_rules! implement_stakeholders {
                     $(
                         stringify!($field) => Some(&mut self.$field),
                     )*
-                    "industry_profit" => Some(&mut self.industry_profit_from_measures),
                     _ => None,
                 }
             }
@@ -49,18 +48,18 @@ macro_rules! implement_stakeholders {
 }
 
 implement_stakeholders! {
-    private_invest,
-    private_effect_of_measures,
-    private_cash_flow_netto,
-    industry_invest,
-    industry_effect_of_measures,
-    industry_profit_from_measures,
-    industry_cash_flow_netto,
-    community_invest,
-    community_effect_of_measures,
-    community_tax_income_from_measures,
-    community_cash_flow_netto,
-    federal_additional_expenses,
-    federal_additional_tax_income,
-    federal_cash_flow_netto
+    private_invest__M__eur_per_a,
+    private_effect_of_measures__M__eur_per_a,
+    private_cash_flow_netto__M__eur_per_a,
+    industry_invest__M__eur_per_a,
+    industry_effect_of_measures__M__eur_per_a,
+    industry_profit_from_measures__M__eur_per_a,
+    industry_cash_flow_netto__M__eur_per_a,
+    community_invest__M__eur_per_a,
+    community_effect_of_measures__M__eur_per_a,
+    community_tax_income_from_measures__M__eur_per_a,
+    community_cash_flow_netto__M__eur_per_a,
+    federal_additional_expenses__M__eur_per_a,
+    federal_additional_tax_income__M__eur_per_a,
+    federal_cash_flow_netto__M__eur_per_a
 }

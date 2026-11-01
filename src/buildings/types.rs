@@ -166,7 +166,8 @@ macro_rules! implement_results_buildings{
                             => self.$field.get_results_by_id(remaining_id),
                      )*
                     "costs_other__M__eur" => self.costs_other__M__eur_per_a.get_results_by_id(remaining_id),
-                    "costs_total_heating__M__eur" => self.costs_total__M__eur.get_results_by_id(remaining_id),
+                    "costs_total_heating__M__eur" | "costs_total__M__eur_per_a" => self.costs_total__M__eur.get_results_by_id(remaining_id),
+                    "costs_heat_pump__M__eur_per_a" => self.costs_heat_pump__M__eur.get_results_by_id(remaining_id),
                     _ => None,
                 }
             }

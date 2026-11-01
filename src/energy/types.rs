@@ -101,6 +101,7 @@ macro_rules! implement_results_energy {
                     $(
                         stringify!($field) => self.$field.get_results_by_id(remaining_id),
                     )*
+                    "wind_installed__M__Wp" => self.wind_installed__M__WP.get_results_by_id(remaining_id),
                     _ => None,
                 }
             }

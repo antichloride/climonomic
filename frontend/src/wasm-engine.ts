@@ -325,17 +325,17 @@ export function runSimulation(state: CityBaseline): SimulationOutput {
   const overallReductionPct = (co2ReductionTsdTonnes / startCO2Total) * 100;
 
   // Stakeholder & Economic Results
-  const privInvest = getRes('stakeholders/results/private_invest').map(Math.abs);
-  const indInvest = getRes('stakeholders/results/industry_invest').map(Math.abs);
-  const comInvest = getRes('stakeholders/results/community_invest').map(Math.abs);
+  const privInvest = getRes('stakeholders/results/private_invest__M__eur_per_a').map(Math.abs);
+  const indInvest = getRes('stakeholders/results/industry_invest__M__eur_per_a').map(Math.abs);
+  const comInvest = getRes('stakeholders/results/community_invest__M__eur_per_a').map(Math.abs);
 
-  const privEff = getRes('stakeholders/results/private_effect_of_measures').map(Math.abs);
-  const indEff = getRes('stakeholders/results/industry_effect_of_measures').map(Math.abs);
-  const comEff = getRes('stakeholders/results/community_effect_of_measures').map(Math.abs);
-  const comTax = getRes('stakeholders/results/community_tax_income_from_measures').map(Math.abs);
+  const privEff = getRes('stakeholders/results/private_effect_of_measures__M__eur_per_a').map(Math.abs);
+  const indEff = getRes('stakeholders/results/industry_effect_of_measures__M__eur_per_a').map(Math.abs);
+  const comEff = getRes('stakeholders/results/community_effect_of_measures__M__eur_per_a').map(Math.abs);
+  const comTax = getRes('stakeholders/results/community_tax_income_from_measures__M__eur_per_a').map(Math.abs);
 
   const jobsSeries = getRes('economy/results/n_jobs_crafting_local');
-  const turnoverSeries = getRes('economy/results/turnover_local');
+  const turnoverSeries = getRes('economy/results/turnover_local__M__eur_per_a');
 
   const sumPeriod = (arr: number[]) => {
     let s = 0;

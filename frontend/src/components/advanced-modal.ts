@@ -147,7 +147,7 @@ function renderDomainContent(
               <thead>
                 <tr>
                   <th style="min-width: 240px; text-align: left;">Parameter & Beschreibung</th>
-                  <th style="width: 80px; text-align: center;">Einheit</th>
+                  <th style="width: 130px; text-align: center;">Einheit</th>
                   ${sectors.map(sec => `
                     <th style="width: 140px; text-align: right;">
                       <div>${sec.label}</div>
@@ -191,9 +191,8 @@ function renderSectorRow(
         <div style="font-size: 0.72rem; color: var(--k-color-text-muted); margin-top: 2px;">
           ${param.description}
         </div>
-        <code style="font-size: 0.65rem; color: var(--k-color-primary-base);">${param.domain}/${param.param}</code>
       </td>
-      <td class="expert-col-unit" style="text-align: center; font-size: 0.8rem; font-weight: 600; color: var(--k-color-text-muted);">
+      <td class="expert-col-unit" style="text-align: center; font-size: 0.78rem; font-weight: 600; color: var(--k-color-text-muted); white-space: nowrap;">
         ${param.unit}
       </td>
       ${sectors.map(sec => {

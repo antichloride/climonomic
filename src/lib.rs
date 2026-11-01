@@ -511,8 +511,8 @@ mod integration_tests{
         calculator.mobility = mobility;
         calculator.calculate_over_years();
         console::log_1(&to_value(&calculator.list_result_ids()).unwrap());
-        console::log_1(&to_value(&calculator.get_results("economy/results/invest_heating_material").unwrap()).unwrap());
-        console::log_1(&to_value(&calculator.economy.invest_heating_material.values).unwrap());
+        console::log_1(&to_value(&calculator.get_results("economy/results/invest_heating_material__M__eur_per_a").unwrap()).unwrap());
+        console::log_1(&to_value(&calculator.economy.invest_heating_material__M__eur_per_a.values).unwrap());
         console::log_1(&to_value(&calculator.get_results("buildings/results/floor_A__k__m2/private").unwrap()).unwrap());
         console::log_1(&to_value(&calculator.buildings.results.floor_A__k__m2.private.values).unwrap());
     }
@@ -526,7 +526,8 @@ mod unit_tests{
     fn test_calculator_get_results_by_id() {
         let mut calculator: Calculator = Calculator::new(2022, 2025);
         assert!(!calculator.get_results_by_id("buildings/results/floor_A__k__m2/private").is_none());
-        assert!(!calculator.get_results_by_id("economy/results/invest_heating_material").is_none());
+        assert!(!calculator.get_results_by_id("economy/results/invest_heating_material__M__eur_per_a").is_none());
+        assert!(!calculator.get_results_by_id("stakeholders/results/private_invest__M__eur_per_a").is_none());
     }
 
     #[test]

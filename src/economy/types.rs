@@ -3,7 +3,7 @@
 use crate::result::Results;
 
 macro_rules! implement_economy {
-    ($($field:ident),*) => {
+    ($($field:ident),* $(,)?) => {
         #[derive(serde::Serialize)]
         pub struct Economy {
             #[serde(skip)]
@@ -40,9 +40,6 @@ macro_rules! implement_economy {
                     $(
                         stringify!($field) => Some(&mut self.$field),
                     )*
-                    "turnover_local_with_materials" => Some(&mut self.turnover_local),
-                    "trade_tax_local" => Some(&mut self.business_tax_local),
-                    "trade_tax_national" => Some(&mut self.business_tax_national),
                     _ => None,
                 }
             }
@@ -51,46 +48,46 @@ macro_rules! implement_economy {
 }
 
 implement_economy! {
-    invest_heating_material,
-    invest_heating_work,
-    turnover_heating_crafting_local,
-    turnover_heating_crafting_national,
-    turnover_heating_production_national,
-    invest_heat_demand_material,
-    invest_heat_demand_work,
-    turnover_heat_demand_crafting_local,
-    turnover_heat_demand_crafting_national,
-    turnover_heat_demand_production_national,
-    invest_solar_roof_material,
-    invest_solar_roof_work,
-    maintenance_solar_roof_work,
-    turnover_solar_roof_crafting_local,
-    turnover_solar_roof_crafting_national,
-    turnover_solar_roof_production_national,
-    invest_solar_landscape_material,
-    invest_solar_landscape_work,
-    maintenance_solar_landscape_work,
-    turnover_solar_landscape_crafting_local,
-    turnover_solar_landscape_crafting_national,
-    turnover_solar_landscape_production_national,
+    invest_heating_material__M__eur_per_a,
+    invest_heating_work__M__eur_per_a,
+    turnover_heating_crafting_local__M__eur_per_a,
+    turnover_heating_crafting_national__M__eur_per_a,
+    turnover_heating_production_national__M__eur_per_a,
+    invest_heat_demand_material__M__eur_per_a,
+    invest_heat_demand_work__M__eur_per_a,
+    turnover_heat_demand_crafting_local__M__eur_per_a,
+    turnover_heat_demand_crafting_national__M__eur_per_a,
+    turnover_heat_demand_production_national__M__eur_per_a,
+    invest_solar_roof_material__M__eur_per_a,
+    invest_solar_roof_work__M__eur_per_a,
+    maintenance_solar_roof_work__M__eur_per_a,
+    turnover_solar_roof_crafting_local__M__eur_per_a,
+    turnover_solar_roof_crafting_national__M__eur_per_a,
+    turnover_solar_roof_production_national__M__eur_per_a,
+    invest_solar_landscape_material__M__eur_per_a,
+    invest_solar_landscape_work__M__eur_per_a,
+    maintenance_solar_landscape_work__M__eur_per_a,
+    turnover_solar_landscape_crafting_local__M__eur_per_a,
+    turnover_solar_landscape_crafting_national__M__eur_per_a,
+    turnover_solar_landscape_production_national__M__eur_per_a,
     n_jobs_crafting_local,
     n_jobs_crafting_national,
     n_jobs_production_national,
     n_jobs_production_sum_national,
-    income_local,
-    income_national,
-    income_tax_local,
-    income_tax_national,
-    turnover_local,
-    revenue_local,
-    turnover_national,
-    turnover_tax_local,
-    turnover_tax_national,
-    business_tax_local,
-    business_tax_national,
-    corporate_tax_national,
-    energy_tax_oil,
-    energy_tax_gas,
-    energy_tax_fuel,
-    energy_tax_national
+    income_local__M__eur_per_a,
+    income_national__M__eur_per_a,
+    income_tax_local__M__eur_per_a,
+    income_tax_national__M__eur_per_a,
+    turnover_local__M__eur_per_a,
+    revenue_local__M__eur_per_a,
+    turnover_national__M__eur_per_a,
+    turnover_tax_local__M__eur_per_a,
+    turnover_tax_national__M__eur_per_a,
+    business_tax_local__M__eur_per_a,
+    business_tax_national__M__eur_per_a,
+    corporate_tax_national__M__eur_per_a,
+    energy_tax_oil__eur_per_L,
+    energy_tax_gas__eur_per_kWh,
+    energy_tax_fuel__eur_per_L,
+    energy_tax_national__M__eur_per_a
 }
