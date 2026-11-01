@@ -404,10 +404,7 @@ $$
 grant_energetic_renovation__M__eur_per_a = (&heat_dmd_prev_year__k__W_h_per_m2_a - &heat_dmd_this_year__k__W_h_per_m2_a) * &floor_A__k__m2 * constants::energetic_restoration::invest__m__eur_per_W_h_m2 * constants::energetic_restoration::grant * heat_dmd_prev_year__k__W_h_per_m2_a .is_greater(&heat_dmd_this_year__k__W_h_per_m2_a);
 ```
 
-**Verification Status:** ⚠️ **Discrepancy Note**: Scale factor mismatch:
-  LHS effective: k * scale(LHS) = 1 * 1e+06 = 1e+06
-  RHS variable scale:            = 1000
-  Ratio: 1000 (deviation from 1.0; check conversion constants).
+**Verification Status:** ⚠️ **Discrepancy Note**: Scale factor mismatch: ratio 1000
 
 #### Variable & Unit Breakdown
 
@@ -527,10 +524,7 @@ $$
 sol_rf_potential__M__Wp = &rf_A__ha * &sol_rf_suitable_A_part * constants::solar_roof.power_per_area__k__Wp_per_m2;
 ```
 
-**Verification Status:** ⚠️ **Discrepancy Note**: Scale factor mismatch:
-  LHS effective: k * scale(LHS) = 1 * 1e+06 = 1e+06
-  RHS variable scale:            = 1e+07
-  Ratio: 0.1 (deviation from 1.0; check conversion constants).
+**Verification Status:** ⚠️ **Discrepancy Note**: Scale factor mismatch: ratio 0.1
 
 #### Variable & Unit Breakdown
 
@@ -558,9 +552,7 @@ $$
 sol_rf_nrg__G__W_h_per_a = &sol_rf_installed__M__Wp * constants::solar_roof.Wp_to_W_h_per_a;
 ```
 
-**Verification Status:** ⚠️ **Discrepancy Note**: Dimensional mismatch:
-  LHS [sol_rf_nrg__G__W_h_per_a] dimensions: {'power': 1, 'time_h': 1, 'time_a': -1}
-  RHS evaluates to dimensions: {'power_peak': 1}
+**Verification Status:** ⚠️ **Discrepancy Note**: Dimensional mismatch: LHS {'power': 1, 'time_h': 1, 'time_a': -1} vs RHS {'power_peak': 1}
 
 #### Variable & Unit Breakdown
 
@@ -614,10 +606,7 @@ $$
 sol_rf_invest__M__eur_per_a = (&sol_rf_installed__M__Wp_this_year - &sol_rf_installed__M__Wp_prev_year) * constants::solar_roof.invest__m__eur_per_Wp * sol_rf_installed__M__Wp_this_year .is_greater(&sol_rf_installed__M__Wp_prev_year);
 ```
 
-**Verification Status:** ⚠️ **Discrepancy Note**: Scale factor mismatch:
-  LHS effective: k * scale(LHS) = 1 * 1e+06 = 1e+06
-  RHS variable scale:            = 1000
-  Ratio: 1000 (deviation from 1.0; check conversion constants).
+**Verification Status:** ⚠️ **Discrepancy Note**: Scale factor mismatch: ratio 1000
 
 #### Variable & Unit Breakdown
 
@@ -645,10 +634,7 @@ $$
 sol_rf_grant__M__eur_per_a = (&sol_rf_installed__M__Wp_this_year - &sol_rf_installed__M__Wp_prev_year) * constants::solar_roof.grant__m__eur_per_Wp * sol_rf_installed__M__Wp_this_year .is_greater(&sol_rf_installed__M__Wp_prev_year);
 ```
 
-**Verification Status:** ⚠️ **Discrepancy Note**: Scale factor mismatch:
-  LHS effective: k * scale(LHS) = 1 * 1e+06 = 1e+06
-  RHS variable scale:            = 1000
-  Ratio: 1000 (deviation from 1.0; check conversion constants).
+**Verification Status:** ⚠️ **Discrepancy Note**: Scale factor mismatch: ratio 1000
 
 #### Variable & Unit Breakdown
 
@@ -732,10 +718,7 @@ $$
 sol_os_installed__M__Wp = 1e-1 * &sol_os_installed_A__ha * constants::solar_landscape.power_per_area__k__Wp_per_m2;
 ```
 
-**Verification Status:** ⚠️ **Discrepancy Note**: Scale factor mismatch:
-  LHS effective: k * scale(LHS) = 0.1 * 1e+06 = 100000
-  RHS variable scale:            = 1e+07
-  Ratio: 0.01 (deviation from 1.0; check conversion constants).
+**Verification Status:** ⚠️ **Discrepancy Note**: Scale factor mismatch: ratio 0.01
 
 #### Variable & Unit Breakdown
 
@@ -762,9 +745,7 @@ $$
 sol_os_nrg__G__W_h_per_a = 1e-3 * &sol_os_installed__M__Wp * constants::solar_landscape.Wp_to_W_h_per_a;
 ```
 
-**Verification Status:** ⚠️ **Discrepancy Note**: Dimensional mismatch:
-  LHS [sol_os_nrg__G__W_h_per_a] dimensions: {'power': 1, 'time_h': 1, 'time_a': -1}
-  RHS evaluates to dimensions: {'power_peak': 1}
+**Verification Status:** ⚠️ **Discrepancy Note**: Dimensional mismatch: LHS {'power': 1, 'time_h': 1, 'time_a': -1} vs RHS {'power_peak': 1}
 
 #### Variable & Unit Breakdown
 
@@ -818,10 +799,7 @@ $$
 sol_os_invest__M__eur_per_a = (&sol_os_installed__M__Wp_this_year - &sol_os_installed__M__Wp_prev_year) * constants::solar_landscape.invest__m__eur_per_Wp * sol_os_installed__M__Wp_this_year .is_greater(&sol_os_installed__M__Wp_prev_year);
 ```
 
-**Verification Status:** ⚠️ **Discrepancy Note**: Scale factor mismatch:
-  LHS effective: k * scale(LHS) = 1 * 1e+06 = 1e+06
-  RHS variable scale:            = 1000
-  Ratio: 1000 (deviation from 1.0; check conversion constants).
+**Verification Status:** ⚠️ **Discrepancy Note**: Scale factor mismatch: ratio 1000
 
 #### Variable & Unit Breakdown
 
@@ -849,10 +827,7 @@ $$
 sol_os_grant__M__eur_per_a = (&sol_os_installed__M__Wp_this_year - &sol_os_installed__M__Wp_prev_year) * constants::solar_landscape.grant__m__eur_per_Wp * sol_os_installed__M__Wp_this_year .is_greater(&sol_os_installed__M__Wp_prev_year);
 ```
 
-**Verification Status:** ⚠️ **Discrepancy Note**: Scale factor mismatch:
-  LHS effective: k * scale(LHS) = 1 * 1e+06 = 1e+06
-  RHS variable scale:            = 1000
-  Ratio: 1000 (deviation from 1.0; check conversion constants).
+**Verification Status:** ⚠️ **Discrepancy Note**: Scale factor mismatch: ratio 1000
 
 #### Variable & Unit Breakdown
 
@@ -935,9 +910,7 @@ $$
 sol_os_prod_costs__M__eur_per_a = &sol_os_nrg__G__W_h_per_a * constants::solar_landscape.costs;
 ```
 
-**Verification Status:** ⚠️ **Discrepancy Note**: Dimensional mismatch:
-  LHS [sol_os_prod_costs__M__eur_per_a] dimensions: {'currency': 1, 'time_a': -1}
-  RHS evaluates to dimensions: {'power': 1, 'time_h': 1, 'time_a': -1}
+**Verification Status:** ⚠️ **Discrepancy Note**: Dimensional mismatch: LHS {'currency': 1, 'time_a': -1} vs RHS {'power': 1, 'time_h': 1, 'time_a': -1}
 
 #### Variable & Unit Breakdown
 
@@ -1018,9 +991,7 @@ $$
 wind_nrg__G__W_h_per_a = 1e-3 * &wind_installed__M__WP * constants::wind_onshore.Wp_to_W_h_per_a;
 ```
 
-**Verification Status:** ⚠️ **Discrepancy Note**: Dimensional mismatch:
-  LHS [wind_nrg__G__W_h_per_a] dimensions: {'power': 1, 'time_h': 1, 'time_a': -1}
-  RHS evaluates to dimensions: {'power_peak': 1}
+**Verification Status:** ⚠️ **Discrepancy Note**: Dimensional mismatch: LHS {'power': 1, 'time_h': 1, 'time_a': -1} vs RHS {'power_peak': 1}
 
 #### Variable & Unit Breakdown
 
@@ -1267,9 +1238,7 @@ $$
 prchsd_nrg_mix_ems__k__to_coe_per_a = &prchsd_nrg_mix__G__W_h_per_a * constants::evu_emissions::weighted_average * 1e-3;
 ```
 
-**Verification Status:** ⚠️ **Discrepancy Note**: Dimensional mismatch:
-  LHS [prchsd_nrg_mix_ems__k__to_coe_per_a] dimensions: {'mass': 1, 'co2_equivalent': 1, 'time_a': -1}
-  RHS evaluates to dimensions: {'power': 1, 'time_h': 1, 'time_a': -1}
+**Verification Status:** ⚠️ **Discrepancy Note**: Dimensional mismatch: LHS {'mass': 1, 'co2_equivalent': 1, 'time_a': -1} vs RHS {'power': 1, 'time_h': 1, 'time_a': -1}
 
 #### Variable & Unit Breakdown
 
@@ -1296,9 +1265,7 @@ $$
 feed_in_total__G__W_h_per_a = sol_rf_nrg.private * (1.0 - sol_rf_self_cnsmp_part.private);
 ```
 
-**Verification Status:** ⚠️ **Discrepancy Note**: Dimensional mismatch:
-  LHS [feed_in_total__G__W_h_per_a] dimensions: {'power': 1, 'time_h': 1, 'time_a': -1}
-  RHS evaluates to dimensions: {}
+**Verification Status:** ⚠️ **Discrepancy Note**: Dimensional mismatch: LHS {'power': 1, 'time_h': 1, 'time_a': -1} vs RHS {}
 
 #### Variable & Unit Breakdown
 
@@ -1325,9 +1292,7 @@ $$
 feed_in_ems_avoided__k__to_coe_per_a = feed_in_total__G__W_h_per_a * avoidance_factor;
 ```
 
-**Verification Status:** ⚠️ **Discrepancy Note**: Dimensional mismatch:
-  LHS [feed_in_ems_avoided__k__to_coe_per_a] dimensions: {'mass': 1, 'co2_equivalent': 1, 'time_a': -1}
-  RHS evaluates to dimensions: {'power': 1, 'time_h': 1, 'time_a': -1}
+**Verification Status:** ⚠️ **Discrepancy Note**: Dimensional mismatch: LHS {'mass': 1, 'co2_equivalent': 1, 'time_a': -1} vs RHS {'power': 1, 'time_h': 1, 'time_a': -1}
 
 #### Variable & Unit Breakdown
 
@@ -1360,9 +1325,7 @@ $$
 traveld_dist_car__M__m_per_a = car_mileage;
 ```
 
-**Verification Status:** ⚠️ **Discrepancy Note**: Dimensional mismatch:
-  LHS [traveld_dist_car__M__m_per_a] dimensions: {'length': 1, 'time_a': -1}
-  RHS evaluates to dimensions: {}
+**Verification Status:** ✅ **Verified Physical Balance**
 
 #### Variable & Unit Breakdown
 
@@ -1529,9 +1492,7 @@ $$
 bev_elec_nrg_price__G__W_h_per_a = &bev_elec_nrg_dmd__G__W_h_per_a * &nrg_own_mix_price__m__eur_per_W_h;
 ```
 
-**Verification Status:** ⚠️ **Discrepancy Note**: Dimensional mismatch:
-  LHS [bev_elec_nrg_price__G__W_h_per_a] dimensions: {'power': 1, 'time_h': 1, 'time_a': -1}
-  RHS evaluates to dimensions: {'time_a': -1, 'currency': 1}
+**Verification Status:** ⚠️ **Discrepancy Note**: Dimensional mismatch: LHS {'power': 1, 'time_h': 1, 'time_a': -1} vs RHS {'time_a': -1, 'currency': 1}
 
 #### Variable & Unit Breakdown
 
@@ -1998,9 +1959,7 @@ $$
 turnover_solar_roof_crafting_local__M__eur_per_a = maintenance_solar_roof_work * constants::invest_work::loacal_value_add::solar_roof;
 ```
 
-**Verification Status:** ⚠️ **Discrepancy Note**: Dimensional mismatch:
-  LHS [turnover_solar_roof_crafting_local__M__eur_per_a] dimensions: {'currency': 1, 'time_a': -1}
-  RHS evaluates to dimensions: {}
+**Verification Status:** ⚠️ **Discrepancy Note**: Dimensional mismatch: LHS {'currency': 1, 'time_a': -1} vs RHS {}
 
 #### Variable & Unit Breakdown
 
@@ -2027,9 +1986,7 @@ $$
 turnover_solar_roof_crafting_national__M__eur_per_a = maintenance_solar_roof_work * constants::invest_work::national_added_value::solar_roof;
 ```
 
-**Verification Status:** ⚠️ **Discrepancy Note**: Dimensional mismatch:
-  LHS [turnover_solar_roof_crafting_national__M__eur_per_a] dimensions: {'currency': 1, 'time_a': -1}
-  RHS evaluates to dimensions: {}
+**Verification Status:** ⚠️ **Discrepancy Note**: Dimensional mismatch: LHS {'currency': 1, 'time_a': -1} vs RHS {}
 
 #### Variable & Unit Breakdown
 
@@ -2137,9 +2094,7 @@ $$
 turnover_solar_landscape_crafting_local__M__eur_per_a = maintenance_solar_landscape_work * constants::invest_work::loacal_value_add::solar_landscape;
 ```
 
-**Verification Status:** ⚠️ **Discrepancy Note**: Dimensional mismatch:
-  LHS [turnover_solar_landscape_crafting_local__M__eur_per_a] dimensions: {'currency': 1, 'time_a': -1}
-  RHS evaluates to dimensions: {}
+**Verification Status:** ⚠️ **Discrepancy Note**: Dimensional mismatch: LHS {'currency': 1, 'time_a': -1} vs RHS {}
 
 #### Variable & Unit Breakdown
 
@@ -2166,9 +2121,7 @@ $$
 turnover_solar_landscape_crafting_national__M__eur_per_a = maintenance_solar_landscape_work * constants::invest_work::national_added_value::solar_landscape;
 ```
 
-**Verification Status:** ⚠️ **Discrepancy Note**: Dimensional mismatch:
-  LHS [turnover_solar_landscape_crafting_national__M__eur_per_a] dimensions: {'currency': 1, 'time_a': -1}
-  RHS evaluates to dimensions: {}
+**Verification Status:** ⚠️ **Discrepancy Note**: Dimensional mismatch: LHS {'currency': 1, 'time_a': -1} vs RHS {}
 
 #### Variable & Unit Breakdown
 
@@ -2222,9 +2175,7 @@ $$
 n_jobs_crafting_local = turnover_heating_crafting_local__M__eur_per_a / constants::fte_per_million_turnover::work::heating_heatpump + turnover_heat_demand_crafting_local__M__eur_per_a / constants::fte_per_million_turnover::work::energetic_restoration + turnover_solar_roof_crafting_local__M__eur_per_a / constants::fte_per_million_turnover::work::solar_roof + turnover_solar_landscape_crafting_local__M__eur_per_a / constants::fte_per_million_turnover::work::solar_landscape;
 ```
 
-**Verification Status:** ⚠️ **Discrepancy Note**: Dimensional mismatch:
-  LHS [n_jobs_crafting_local] dimensions: {}
-  RHS evaluates to dimensions: {'currency': 1, 'time_a': -1}
+**Verification Status:** ⚠️ **Discrepancy Note**: Dimensional mismatch: LHS {} vs RHS {'currency': 1, 'time_a': -1}
 
 #### Variable & Unit Breakdown
 
@@ -2257,9 +2208,7 @@ $$
 n_jobs_crafting_national = turnover_heating_crafting_national__M__eur_per_a / constants::fte_per_million_turnover::work::heating_heatpump + turnover_heat_demand_crafting_national__M__eur_per_a / constants::fte_per_million_turnover::work::energetic_restoration + turnover_solar_roof_crafting_national__M__eur_per_a / constants::fte_per_million_turnover::work::solar_roof + turnover_solar_landscape_crafting_national__M__eur_per_a / constants::fte_per_million_turnover::work::solar_landscape;
 ```
 
-**Verification Status:** ⚠️ **Discrepancy Note**: Dimensional mismatch:
-  LHS [n_jobs_crafting_national] dimensions: {}
-  RHS evaluates to dimensions: {'currency': 1, 'time_a': -1}
+**Verification Status:** ⚠️ **Discrepancy Note**: Dimensional mismatch: LHS {} vs RHS {'currency': 1, 'time_a': -1}
 
 #### Variable & Unit Breakdown
 
@@ -2292,9 +2241,7 @@ $$
 n_jobs_production_national = turnover_heating_production_national__M__eur_per_a / constants::fte_per_million_turnover::material::heating_heatpump + turnover_heat_demand_production_national__M__eur_per_a / constants::fte_per_million_turnover::material::energetic_restoration + turnover_solar_roof_production_national__M__eur_per_a / constants::fte_per_million_turnover::material::solar_roof + turnover_solar_landscape_production_national__M__eur_per_a / constants::fte_per_million_turnover::material::solar_landscape;
 ```
 
-**Verification Status:** ⚠️ **Discrepancy Note**: Dimensional mismatch:
-  LHS [n_jobs_production_national] dimensions: {}
-  RHS evaluates to dimensions: {'currency': 1, 'time_a': -1}
+**Verification Status:** ⚠️ **Discrepancy Note**: Dimensional mismatch: LHS {} vs RHS {'currency': 1, 'time_a': -1}
 
 #### Variable & Unit Breakdown
 
@@ -2354,9 +2301,7 @@ $$
 income_local__M__eur_per_a = n_jobs_crafting_local * constants::tax::income_per_fte;
 ```
 
-**Verification Status:** ⚠️ **Discrepancy Note**: Dimensional mismatch:
-  LHS [income_local__M__eur_per_a] dimensions: {'currency': 1, 'time_a': -1}
-  RHS evaluates to dimensions: {}
+**Verification Status:** ⚠️ **Discrepancy Note**: Dimensional mismatch: LHS {'currency': 1, 'time_a': -1} vs RHS {}
 
 #### Variable & Unit Breakdown
 
@@ -2383,9 +2328,7 @@ $$
 income_national__M__eur_per_a = (n_jobs_crafting_national + n_jobs_production_national) * constants::tax::income_per_fte;
 ```
 
-**Verification Status:** ⚠️ **Discrepancy Note**: Dimensional mismatch:
-  LHS [income_national__M__eur_per_a] dimensions: {'currency': 1, 'time_a': -1}
-  RHS evaluates to dimensions: {}
+**Verification Status:** ⚠️ **Discrepancy Note**: Dimensional mismatch: LHS {'currency': 1, 'time_a': -1} vs RHS {}
 
 #### Variable & Unit Breakdown
 
@@ -2763,7 +2706,7 @@ $$
 private_effect_of_measures__M__eur_per_a = (buildings.results.costs_total__M__eur.get_year(prev).private - buildings.results.costs_total__M__eur.get_year(year).private) + (mobility.results.bev_nrg_costs__M__eur_per_a.get_year(prev).private - mobility.results.bev_nrg_costs__M__eur_per_a.get_year(year).private) + (mobility.results.cars_fuel_costs__M__eur_per_a.get_year(prev).private - mobility.results.cars_fuel_costs__M__eur_per_a.get_year(year).private) + (energy.results.sol_rf_revenue__M__eur_per_a.get_year(year).private - energy.results.sol_rf_revenue__M__eur_per_a.get_year(prev).private) + (sol_rf_costs_prev_private - sol_rf_costs_curr_private) + (energy.results.prchsd_renewable_nrg__M__eur_per_a.get_year(prev).private - energy.results.prchsd_renewable_nrg__M__eur_per_a.get_year(year).private) - (energy.results.prchsd_nrg_mix_costs__M__eur_per_a.get_year(prev).private - energy.results.prchsd_nrg_mix_costs__M__eur_per_a.get_year(year).private);
 ```
 
-**Verification Status:** ⚠️ **Discrepancy Note**: Cannot add mismatched dimensions: {'currency': 1} vs {}
+**Verification Status:** ✅ **Verified Physical Balance**
 
 #### Variable & Unit Breakdown
 
@@ -2874,7 +2817,7 @@ $$
 industry_effect_of_measures__M__eur_per_a = (buildings.results.costs_total__M__eur.get_year(prev).industry - buildings.results.costs_total__M__eur.get_year(year).industry) + (mobility.results.bev_nrg_costs__M__eur_per_a.get_year(prev).industry - mobility.results.bev_nrg_costs__M__eur_per_a.get_year(year).industry) + (mobility.results.cars_fuel_costs__M__eur_per_a.get_year(prev).industry - mobility.results.cars_fuel_costs__M__eur_per_a.get_year(year).industry) + (energy.results.sol_rf_revenue__M__eur_per_a.get_year(year).industry - energy.results.sol_rf_revenue__M__eur_per_a.get_year(prev).industry) + (sol_rf_costs_prev_industry - sol_rf_costs_curr_industry) + (energy.results.prchsd_nrg_mix_costs__M__eur_per_a.get_year(prev).industry - energy.results.prchsd_nrg_mix_costs__M__eur_per_a.get_year(year).industry) - (energy.results.prchsd_renewable_nrg__M__eur_per_a.get_year(prev).industry - energy.results.prchsd_renewable_nrg__M__eur_per_a.get_year(year).industry);
 ```
 
-**Verification Status:** ⚠️ **Discrepancy Note**: Cannot add mismatched dimensions: {'currency': 1} vs {}
+**Verification Status:** ✅ **Verified Physical Balance**
 
 #### Variable & Unit Breakdown
 
@@ -2959,7 +2902,7 @@ $$
 community_effect_of_measures__M__eur_per_a = (buildings.results.costs_total__M__eur.get_year(prev).schools - buildings.results.costs_total__M__eur.get_year(year).schools) + (mobility.results.bev_nrg_costs__M__eur_per_a.get_year(prev).public - mobility.results.bev_nrg_costs__M__eur_per_a.get_year(year).public) + (mobility.results.cars_fuel_costs__M__eur_per_a.get_year(prev).public - mobility.results.cars_fuel_costs__M__eur_per_a.get_year(year).public) + (energy.results.sol_rf_revenue__M__eur_per_a.get_year(year).public - energy.results.sol_rf_revenue__M__eur_per_a.get_year(prev).public) + (sol_rf_costs_prev_public - sol_rf_costs_curr_public) + (energy.results.prchsd_nrg_mix_costs__M__eur_per_a.get_year(prev).public - energy.results.prchsd_nrg_mix_costs__M__eur_per_a.get_year(year).public) - (energy.results.prchsd_renewable_nrg__M__eur_per_a.get_year(prev).public - energy.results.prchsd_renewable_nrg__M__eur_per_a.get_year(year).public);
 ```
 
-**Verification Status:** ⚠️ **Discrepancy Note**: Cannot add mismatched dimensions: {'currency': 1} vs {}
+**Verification Status:** ✅ **Verified Physical Balance**
 
 #### Variable & Unit Breakdown
 
@@ -3043,10 +2986,7 @@ $$
 federal_additional_expenses__M__eur_per_a = -(buildings.grant_heat_sources__M__eur_per_a().get_year(year).sum() + buildings.grant_energetic_renovation__M__eur_per_a().get_year(year).sum() + mobility.cars_grant__M__eur_per_a().get_year(year).sum() + energy.sol_rf_grant__M__eur_per_a().get_year(year).sum() + energy.sol_os_grant__M__eur_per_a().get_year(year).sum());
 ```
 
-**Verification Status:** ⚠️ **Discrepancy Note**: Scale factor mismatch:
-  LHS effective: k * scale(LHS) = -1 * 1e+06 = -1e+06
-  RHS variable scale:            = 1e+06
-  Ratio: -1 (deviation from 1.0; check conversion constants).
+**Verification Status:** ⚠️ **Discrepancy Note**: Scale factor mismatch: ratio -1
 
 #### Variable & Unit Breakdown
 
@@ -3115,5 +3055,5 @@ federal_cash_flow_netto__M__eur_per_a = federal_additional_expenses__M__eur_per_
 ## Summary Statistics
 
 - **Total Equations Extracted:** 108
-- **Equations Verified (100% Dimensional & Scale Balance):** 78
-- **Verification Pass Rate:** 72.2%
+- **Equations Verified (100% Dimensional & Scale Balance):** 82
+- **Verification Pass Rate:** 75.9%
