@@ -31,15 +31,19 @@ export interface CityBaseline {
 
   // Measures configuration
   measures: {
-    // Sector 1: Buildings
+    // Sector 1: Buildings & Heating
     heatDmd: {
       enabled: boolean;
-      targetPrivate: number; // kWh/m² (default 88, from 114)
-      targetGHD: number;     // kWh/m² (default 75, from 96)
-      targetKommune: number; // kWh/m² (default 75, from 96)
+      startYear?: number;
+      endYear?: number;
+      targetPrivate: number; // kWh/m² (default 76, from 94.8)
+      targetGHD: number;     // kWh/m² (default 76.5, from 95.6)
+      targetKommune: number; // kWh/m² (default 76.5, from 95.6)
     };
     gasPhaseout: {
       enabled: boolean;
+      startYear?: number;
+      endYear?: number;
       targetPrivate: number; // tsd m² remaining (default 0)
       subWpPrivate: number;  // % heat pump (default 50)
       subFwPrivate: number;  // % district heating (default 50)
@@ -52,6 +56,8 @@ export interface CityBaseline {
     };
     oilPhaseout: {
       enabled: boolean;
+      startYear?: number;
+      endYear?: number;
       targetPrivate: number; // tsd m² remaining (default 0)
       subWpPrivate: number;
       subFwPrivate: number;
@@ -62,33 +68,76 @@ export interface CityBaseline {
       subWpKommune: number;
       subFwKommune: number;
     };
+    districtHeating: {
+      enabled: boolean;
+      startYear?: number;
+      endYear?: number;
+      capacityGWh: number;   // default 5456.6
+      shareRenewable: number;// % renewable (default 100%)
+    };
 
-    // Sector 2: Energy
+    // Sector 2: Energy & Electricity
     pvRoof: {
       enabled: boolean;
-      targetPrivate: number; // MWp (default 14.2, from 8.4)
-      targetGHD: number;     // MWp (default 19.8, from 11.6)
-      targetKommune: number; // MWp (default 1.0, from 0.6)
+      startYear?: number;
+      endYear?: number;
+      targetPrivate: number; // MWp (default 11.5)
+      targetGHD: number;     // MWp (default 10.7)
+      targetKommune: number; // MWp (default 0.6)
+      selfConsumptionPart?: number; // default 0.6
     };
     pvOpen: {
       enabled: boolean;
+      startYear?: number;
+      endYear?: number;
       targetPrivate: number; // MWp
-      targetGHD: number;     // MWp
-      targetKommune: number; // MWp
+      targetGHD: number;     // MWp (default 8.2)
+      targetKommune: number; // MWp (default 0.4)
     };
     wind: {
       enabled: boolean;
+      startYear?: number;
+      endYear?: number;
       targetPrivate: number;
-      targetGHD: number;     // MWp
-      targetKommune: number; // MWp
+      targetGHD: number;     // MWp (default 16.5)
+      targetKommune: number; // MWp (default 0.9)
+    };
+    biomass: {
+      enabled: boolean;
+      startYear?: number;
+      endYear?: number;
+      targetGHD: number;     // MWp (default 2.35)
+      targetKommune: number; // MWp (default 0.12)
+    };
+    storage: {
+      enabled: boolean;
+      startYear?: number;
+      endYear?: number;
+      capacityMWh: number;   // MWh (default 20.0)
+    };
+    variableTariffs: {
+      enabled: boolean;
+      startYear?: number;
+      endYear?: number;
+      customerShare: number; // % (default 20%)
     };
 
-    // Sector 3: Mobility
+    // Sector 3: Mobility & Fleet
     evCars: {
       enabled: boolean;
-      targetPrivate: number; // tsd vehicles
-      targetGHD: number;     // tsd vehicles
-      targetKommune: number; // tsd vehicles
+      startYear?: number;
+      endYear?: number;
+      targetPrivate: number; // tsd vehicles (default 5.9)
+      targetGHD: number;     // tsd vehicles (default 0.7)
+      targetKommune: number; // tsd vehicles (default 0.04)
+    };
+
+    // Sector 4: Municipal Infrastructure
+    streetLighting: {
+      enabled: boolean;
+      startYear?: number;
+      endYear?: number;
+      targetKommune: number; // tsd LED points (default 1.21)
     };
   };
 }
@@ -118,12 +167,16 @@ export function createDefaultState(): CityBaseline {
     measures: {
       heatDmd: {
         enabled: true,
-        targetPrivate: 88,
-        targetGHD: 75,
-        targetKommune: 75,
+        startYear: 2026,
+        endYear: 2040,
+        targetPrivate: 76,
+        targetGHD: 76,
+        targetKommune: 76,
       },
       gasPhaseout: {
         enabled: true,
+        startYear: 2026,
+        endYear: 2040,
         targetPrivate: 0,
         subWpPrivate: 50,
         subFwPrivate: 50,
@@ -136,6 +189,8 @@ export function createDefaultState(): CityBaseline {
       },
       oilPhaseout: {
         enabled: true,
+        startYear: 2026,
+        endYear: 2040,
         targetPrivate: 0,
         subWpPrivate: 50,
         subFwPrivate: 50,
@@ -146,29 +201,70 @@ export function createDefaultState(): CityBaseline {
         subWpKommune: 50,
         subFwKommune: 50,
       },
+      districtHeating: {
+        enabled: true,
+        startYear: 2026,
+        endYear: 2040,
+        capacityGWh: 5456.6,
+        shareRenewable: 100,
+      },
       pvRoof: {
         enabled: true,
+        startYear: 2026,
+        endYear: 2040,
         targetPrivate: 11.5,
         targetGHD: 10.7,
         targetKommune: 0.6,
+        selfConsumptionPart: 0.6,
       },
       pvOpen: {
         enabled: true,
+        startYear: 2026,
+        endYear: 2040,
         targetPrivate: 0.0,
         targetGHD: 8.2,
         targetKommune: 0.4,
       },
       wind: {
         enabled: true,
+        startYear: 2026,
+        endYear: 2040,
         targetPrivate: 0.0,
         targetGHD: 16.5,
         targetKommune: 0.9,
       },
+      biomass: {
+        enabled: true,
+        startYear: 2026,
+        endYear: 2040,
+        targetGHD: 2.35,
+        targetKommune: 0.12,
+      },
+      storage: {
+        enabled: true,
+        startYear: 2026,
+        endYear: 2040,
+        capacityMWh: 20.0,
+      },
+      variableTariffs: {
+        enabled: true,
+        startYear: 2026,
+        endYear: 2040,
+        customerShare: 20,
+      },
       evCars: {
         enabled: true,
+        startYear: 2026,
+        endYear: 2040,
         targetPrivate: 5.9,
         targetGHD: 0.7,
         targetKommune: 0.04,
+      },
+      streetLighting: {
+        enabled: true,
+        startYear: 2026,
+        endYear: 2040,
+        targetKommune: 1.21,
       },
     },
   };
@@ -228,6 +324,15 @@ export function importStateInputs(
   if (rootData.measures && typeof rootData.measures === 'object') {
     (state as any).extractorMeasures = JSON.parse(JSON.stringify(rootData.measures));
     const m = rootData.measures;
+    // Fossil fuel prices from measures.fossil_prices if present
+    if (m.fossil_prices?.petrol?.ist != null) {
+      state.pricePetrol = m.fossil_prices.petrol.ist;
+    }
+    if (m.fossil_prices?.gas?.ist != null) {
+      state.priceGas = m.fossil_prices.gas.ist;
+    }
+
+    // Heat demand
     if (m.private?.heat_demand?.target_kWh_per_m2_a != null) {
       state.measures.heatDmd.targetPrivate = Math.round(m.private.heat_demand.target_kWh_per_m2_a);
     }
@@ -240,7 +345,10 @@ export function importStateInputs(
     if (m.private?.heat_demand?.active != null) {
       state.measures.heatDmd.enabled = Boolean(m.private.heat_demand.active);
     }
+    if (m.private?.heat_demand?.start_year != null) state.measures.heatDmd.startYear = m.private.heat_demand.start_year;
+    if (m.private?.heat_demand?.end_year != null) state.measures.heatDmd.endYear = m.private.heat_demand.end_year;
 
+    // Gas phaseout
     if (m.private?.heat_sources_targets__k__m2?.gas != null) {
       state.measures.gasPhaseout.targetPrivate = Math.round(m.private.heat_sources_targets__k__m2.gas);
     }
@@ -250,7 +358,13 @@ export function importStateInputs(
     if (m.public?.heat_sources_targets__k__m2?.gas != null) {
       state.measures.gasPhaseout.targetKommune = Math.round(m.public.heat_sources_targets__k__m2.gas);
     }
+    if (m.private?.gas_phaseout?.active != null) {
+      state.measures.gasPhaseout.enabled = Boolean(m.private.gas_phaseout.active);
+    }
+    if (m.private?.gas_phaseout?.start_year != null) state.measures.gasPhaseout.startYear = m.private.gas_phaseout.start_year;
+    if (m.private?.gas_phaseout?.end_year != null) state.measures.gasPhaseout.endYear = m.private.gas_phaseout.end_year;
 
+    // Oil phaseout
     if (m.private?.heat_sources_targets__k__m2?.oil != null) {
       state.measures.oilPhaseout.targetPrivate = Math.round(m.private.heat_sources_targets__k__m2.oil);
     }
@@ -260,7 +374,34 @@ export function importStateInputs(
     if (m.public?.heat_sources_targets__k__m2?.oil != null) {
       state.measures.oilPhaseout.targetKommune = Math.round(m.public.heat_sources_targets__k__m2.oil);
     }
+    if (m.private?.oil_phaseout?.active != null) {
+      state.measures.oilPhaseout.enabled = Boolean(m.private.oil_phaseout.active);
+    }
+    if (m.private?.oil_phaseout?.start_year != null) state.measures.oilPhaseout.startYear = m.private.oil_phaseout.start_year;
+    if (m.private?.oil_phaseout?.end_year != null) state.measures.oilPhaseout.endYear = m.private.oil_phaseout.end_year;
 
+    // District heating
+    if (m.municipal_utility?.heating_network_capacity?.target != null) {
+      state.measures.districtHeating.capacityGWh = Number(m.municipal_utility.heating_network_capacity.target.toFixed(1));
+    } else if (m.municipal_utility?.heating_network_capacity__GWh_per_a != null) {
+      state.measures.districtHeating.capacityGWh = Number(m.municipal_utility.heating_network_capacity__GWh_per_a.toFixed(1));
+    }
+    if (m.municipal_utility?.heating_network_capacity?.active != null) {
+      state.measures.districtHeating.enabled = Boolean(m.municipal_utility.heating_network_capacity.active);
+    }
+    if (m.municipal_utility?.heating_network_capacity?.start_year != null) {
+      state.measures.districtHeating.startYear = m.municipal_utility.heating_network_capacity.start_year;
+    }
+    if (m.municipal_utility?.heating_network_capacity?.end_year != null) {
+      state.measures.districtHeating.endYear = m.municipal_utility.heating_network_capacity.end_year;
+    }
+    if (m.municipal_utility?.district_heating_sources) {
+      const s = m.municipal_utility.district_heating_sources;
+      const renSum = (s.biomass?.target ?? 0) + (s.waste_heat?.target ?? 0) + (s.river_heat?.target ?? 0) + (s.geothermal_shallow?.target ?? 0) + (s.geothermal_deep?.target ?? 0);
+      if (renSum > 0) state.measures.districtHeating.shareRenewable = Math.round(renSum * 100);
+    }
+
+    // PV Roof
     if (m.private?.pv_roof?.target_installed__MWp != null) {
       state.measures.pvRoof.targetPrivate = Number(m.private.pv_roof.target_installed__MWp.toFixed(1));
     }
@@ -270,30 +411,124 @@ export function importStateInputs(
     if (m.public?.pv_roof?.target_installed__MWp != null) {
       state.measures.pvRoof.targetKommune = Number(m.public.pv_roof.target_installed__MWp.toFixed(1));
     }
+    if (m.private?.pv_roof?.installed_settings?.active != null) {
+      state.measures.pvRoof.enabled = Boolean(m.private.pv_roof.installed_settings.active);
+    }
+    if (m.private?.pv_roof?.installed_settings?.start_year != null) {
+      state.measures.pvRoof.startYear = m.private.pv_roof.installed_settings.start_year;
+    }
+    if (m.private?.pv_roof?.installed_settings?.end_year != null) {
+      state.measures.pvRoof.endYear = m.private.pv_roof.installed_settings.end_year;
+    }
 
+    // PV Open
     if (m.industry?.renewables?.solar_ground_target__MWp != null) {
       state.measures.pvOpen.targetGHD = Number(m.industry.renewables.solar_ground_target__MWp.toFixed(1));
+    } else if (m.industry?.solar_ground?.target != null) {
+      state.measures.pvOpen.targetGHD = Number(m.industry.solar_ground.target.toFixed(1));
     }
     if (m.municipal_utility?.pv_ground_target__MWp != null) {
       state.measures.pvOpen.targetKommune = Number(m.municipal_utility.pv_ground_target__MWp.toFixed(1));
+    } else if (m.municipal_utility?.pv_ground?.target != null) {
+      state.measures.pvOpen.targetKommune = Number(m.municipal_utility.pv_ground.target.toFixed(1));
     }
+    if (m.industry?.solar_ground?.active != null) {
+      state.measures.pvOpen.enabled = Boolean(m.industry.solar_ground.active);
+    }
+    if (m.industry?.solar_ground?.start_year != null) state.measures.pvOpen.startYear = m.industry.solar_ground.start_year;
+    if (m.industry?.solar_ground?.end_year != null) state.measures.pvOpen.endYear = m.industry.solar_ground.end_year;
 
+    // Wind
     if (m.industry?.renewables?.wind_target__MWp != null) {
       state.measures.wind.targetGHD = Number(m.industry.renewables.wind_target__MWp.toFixed(1));
+    } else if (m.industry?.wind?.target != null) {
+      state.measures.wind.targetGHD = Number(m.industry.wind.target.toFixed(1));
     }
     if (m.municipal_utility?.wind_target__MWp != null) {
       state.measures.wind.targetKommune = Number(m.municipal_utility.wind_target__MWp.toFixed(1));
+    } else if (m.municipal_utility?.wind?.target != null) {
+      state.measures.wind.targetKommune = Number(m.municipal_utility.wind.target.toFixed(1));
     }
+    if (m.industry?.wind?.active != null) {
+      state.measures.wind.enabled = Boolean(m.industry.wind.active);
+    }
+    if (m.industry?.wind?.start_year != null) state.measures.wind.startYear = m.industry.wind.start_year;
+    if (m.industry?.wind?.end_year != null) state.measures.wind.endYear = m.industry.wind.end_year;
 
+    // Biomass
+    if (m.industry?.renewables?.biomass_target__MWp != null) {
+      state.measures.biomass.targetGHD = Number((m.industry.renewables.biomass_target__MWp / 1000).toFixed(2));
+    } else if (m.industry?.biomass?.target != null) {
+      state.measures.biomass.targetGHD = Number((m.industry.biomass.target / 1000).toFixed(2));
+    }
+    if (m.municipal_utility?.biomass_target__MWp != null) {
+      state.measures.biomass.targetKommune = Number((m.municipal_utility.biomass_target__MWp / 1000).toFixed(2));
+    } else if (m.municipal_utility?.biomass?.target != null) {
+      state.measures.biomass.targetKommune = Number((m.municipal_utility.biomass.target / 1000).toFixed(2));
+    }
+    if (m.industry?.biomass?.active != null) {
+      state.measures.biomass.enabled = Boolean(m.industry.biomass.active);
+    }
+    if (m.industry?.biomass?.start_year != null) state.measures.biomass.startYear = m.industry.biomass.start_year;
+    if (m.industry?.biomass?.end_year != null) state.measures.biomass.endYear = m.industry.biomass.end_year;
+
+    // Storage
+    if (m.municipal_utility?.grid_battery?.target != null) {
+      state.measures.storage.capacityMWh = Number(m.municipal_utility.grid_battery.target.toFixed(1));
+    } else if (m.municipal_utility?.grid_battery_capacity_target__MWh != null) {
+      state.measures.storage.capacityMWh = Number(m.municipal_utility.grid_battery_capacity_target__MWh.toFixed(1));
+    }
+    if (m.municipal_utility?.grid_battery?.active != null) {
+      state.measures.storage.enabled = Boolean(m.municipal_utility.grid_battery.active);
+    }
+    if (m.municipal_utility?.grid_battery?.start_year != null) state.measures.storage.startYear = m.municipal_utility.grid_battery.start_year;
+    if (m.municipal_utility?.grid_battery?.end_year != null) state.measures.storage.endYear = m.municipal_utility.grid_battery.end_year;
+
+    // Variable Tariffs
+    if (m.municipal_utility?.variable_tariffs?.target != null) {
+      state.measures.variableTariffs.customerShare = Math.round(m.municipal_utility.variable_tariffs.target * 100);
+    } else if (m.municipal_utility?.variable_tariffs_customer_share != null) {
+      state.measures.variableTariffs.customerShare = Math.round(m.municipal_utility.variable_tariffs_customer_share * 100);
+    }
+    if (m.municipal_utility?.variable_tariffs?.active != null) {
+      state.measures.variableTariffs.enabled = Boolean(m.municipal_utility.variable_tariffs.active);
+    }
+    if (m.municipal_utility?.variable_tariffs?.start_year != null) state.measures.variableTariffs.startYear = m.municipal_utility.variable_tariffs.start_year;
+    if (m.municipal_utility?.variable_tariffs?.end_year != null) state.measures.variableTariffs.endYear = m.municipal_utility.variable_tariffs.end_year;
+
+    // EV Cars
     if (m.private?.mobility?.bev_count_target__k__ != null) {
       state.measures.evCars.targetPrivate = Number(m.private.mobility.bev_count_target__k__.toFixed(1));
+    } else if (m.private?.bev_cars?.target != null) {
+      state.measures.evCars.targetPrivate = Number(m.private.bev_cars.target.toFixed(1));
     }
     if (m.industry?.mobility?.bev_count_target__k__ != null) {
       state.measures.evCars.targetGHD = Number(m.industry.mobility.bev_count_target__k__.toFixed(1));
+    } else if (m.industry?.bev_cars?.target != null) {
+      state.measures.evCars.targetGHD = Number(m.industry.bev_cars.target.toFixed(1));
     }
     if (m.public?.mobility?.bev_count_target__k__ != null) {
       state.measures.evCars.targetKommune = Number(m.public.mobility.bev_count_target__k__.toFixed(1));
+    } else if (m.public?.bev_cars?.target != null) {
+      state.measures.evCars.targetKommune = Number(m.public.bev_cars.target.toFixed(1));
     }
+    if (m.private?.bev_cars?.active != null) {
+      state.measures.evCars.enabled = Boolean(m.private.bev_cars.active);
+    }
+    if (m.private?.bev_cars?.start_year != null) state.measures.evCars.startYear = m.private.bev_cars.start_year;
+    if (m.private?.bev_cars?.end_year != null) state.measures.evCars.endYear = m.private.bev_cars.end_year;
+
+    // Street Lighting
+    if (m.public?.street_lighting?.target != null) {
+      state.measures.streetLighting.targetKommune = Number((m.public.street_lighting.target / 1000).toFixed(2));
+    } else if (m.public?.lighting?.led_points_target__k__ != null) {
+      state.measures.streetLighting.targetKommune = Number((m.public.lighting.led_points_target__k__ / 1000).toFixed(2));
+    }
+    if (m.public?.street_lighting?.active != null) {
+      state.measures.streetLighting.enabled = Boolean(m.public.street_lighting.active);
+    }
+    if (m.public?.street_lighting?.start_year != null) state.measures.streetLighting.startYear = m.public.street_lighting.start_year;
+    if (m.public?.street_lighting?.end_year != null) state.measures.streetLighting.endYear = m.public.street_lighting.end_year;
   }
 
   // If population is present in the imported data, sync top-level population (in 1.000 Ew. dimension)
@@ -315,15 +550,23 @@ export interface ScaledBaselines {
     heatDmdBase: { private: number; ghd: number; kommune: number };
     gasAreaBase: { private: number; ghd: number; kommune: number };
     oilAreaBase: { private: number; ghd: number; kommune: number };
+    districtHeatingBase: { private: number; ghd: number; kommune: number };
   };
   energy: {
     pvRoofBase: { private: number; ghd: number; kommune: number };
     pvOpenBase: { private: number; ghd: number; kommune: number };
     windBase: { private: number; ghd: number; kommune: number };
+    biomassBase: { ghd: number; kommune: number };
+    storageBase: number;
+    variableTariffsBase: number;
   };
   mobility: {
     carsCountBase: { private: number; ghd: number; kommune: number };
     evCountBase: { private: number; ghd: number; kommune: number };
+  };
+  infrastructure: {
+    lightingBase: number;
+    districtHeatingCapacityBase: number;
   };
 }
 
@@ -343,6 +586,11 @@ export function computeScaledBaselines(population: number): ScaledBaselines {
         ghd: 21453.36 * popScale,
         kommune: 442.63 * popScale,
       },
+      districtHeatingBase: {
+        private: 83439.50 * popScale,
+        ghd: 5314.13 * popScale,
+        kommune: 109.64 * popScale,
+      },
     },
     energy: {
       pvRoofBase: {
@@ -360,6 +608,12 @@ export function computeScaledBaselines(population: number): ScaledBaselines {
         ghd: 8268.54 * popScale,
         kommune: 435.19 * popScale,
       },
+      biomassBase: {
+        ghd: 1176.03 * popScale,
+        kommune: 61.90 * popScale,
+      },
+      storageBase: 0.0,
+      variableTariffsBase: 10.0,
     },
     mobility: {
       carsCountBase: {
@@ -372,6 +626,10 @@ export function computeScaledBaselines(population: number): ScaledBaselines {
         ghd: 24.50 * popScale,
         kommune: 1.29 * popScale,
       },
+    },
+    infrastructure: {
+      lightingBase: 605.64 * popScale,
+      districtHeatingCapacityBase: 0.0,
     },
   };
 }

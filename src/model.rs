@@ -177,10 +177,23 @@ const REF_PRIV_PV_ROOF: f64 = 3837.27028864184;
 const REF_IND_PV_ROOF: f64 = 5347.193720401031;
 const REF_PUB_PV_ROOF: f64 = 281.43124844215953;
 
+fn is_measure_active(measures: &serde_json::Value, sector: &str, key: &str) -> bool {
+    if !measures.is_object() || measures.as_object().map_or(true, |o| o.is_empty()) {
+        return true;
+    }
+    if let Some(active) = measures.get(sector).and_then(|s| s.get(key)).and_then(|k| k.get("active")).and_then(|a| a.as_bool()) {
+        return active;
+    }
+    if let Some(active) = measures.get(key).and_then(|k| k.get("enabled")).and_then(|a| a.as_bool()) {
+        return active;
+    }
+    true
+}
+
 /// Computes the municipal transition simulation model across all 3 sectors
 pub fn run_calculation(
     inputs: &serde_json::Value,
-    _measures: &serde_json::Value,
+    measures: &serde_json::Value,
 ) -> CalculationOutputs {
     // 1. Demographics & Building baseline
     let priv_pop = inputs["buildings"]["n_inhabitants__k__"]["private"]
@@ -210,8 +223,9 @@ pub fn run_calculation(
     let priv_converted_cars = (priv_cars - priv_bev) * 1000.0;
     let priv_ev_saving_per_car = 382.58619986664598;
     let priv_ev_invest_per_car = 2353.0 + 550.0;
-    let priv_ev_savings = priv_converted_cars * priv_ev_saving_per_car / 1_000_000.0;
-    let priv_ev_invest = priv_converted_cars * priv_ev_invest_per_car / 1_000_000.0;
+    let priv_ev_active = is_measure_active(measures, "private", "bev_cars");
+    let priv_ev_savings = if priv_ev_active { priv_converted_cars * priv_ev_saving_per_car / 1_000_000.0 } else { 0.0 };
+    let priv_ev_invest = if priv_ev_active { priv_converted_cars * priv_ev_invest_per_car / 1_000_000.0 } else { 0.0 };
     let priv_ev_roi = if priv_ev_invest > 0.0 { priv_ev_savings / priv_ev_invest } else { 0.0 };
 
     // 3. Private Heating
@@ -219,8 +233,11 @@ pub fn run_calculation(
         .as_f64()
         .unwrap_or(REF_PRIV_HEAT_DMD);
     let priv_heat_scale = priv_heat_dmd / REF_PRIV_HEAT_DMD;
-    let priv_heat_savings = 3839.454935490396 * priv_heat_scale;
-    let priv_heat_invest = 40925.51982956569 * priv_heat_scale;
+    let priv_heat_active = is_measure_active(measures, "private", "heat_demand")
+        || is_measure_active(measures, "private", "gas_phaseout")
+        || is_measure_active(measures, "private", "oil_phaseout");
+    let priv_heat_savings = if priv_heat_active { 3839.454935490396 * priv_heat_scale } else { 0.0 };
+    let priv_heat_invest = if priv_heat_active { 40925.51982956569 * priv_heat_scale } else { 0.0 };
     let priv_heat_roi = if priv_heat_invest > 0.0 { priv_heat_savings / priv_heat_invest } else { 0.0 };
 
     // 4. Private PV Roof
@@ -228,8 +245,9 @@ pub fn run_calculation(
         .as_f64()
         .unwrap_or(REF_PRIV_PV_ROOF);
     let priv_pv_scale = priv_pv_roof / REF_PRIV_PV_ROOF;
-    let priv_pv_savings = 2192.750268315847 * priv_pv_scale;
-    let priv_pv_invest = 15157.217640135266 * priv_pv_scale;
+    let priv_pv_active = is_measure_active(measures, "private", "pv_roof");
+    let priv_pv_savings = if priv_pv_active { 2192.750268315847 * priv_pv_scale } else { 0.0 };
+    let priv_pv_invest = if priv_pv_active { 15157.217640135266 * priv_pv_scale } else { 0.0 };
     let priv_pv_roi = if priv_pv_invest > 0.0 { priv_pv_savings / priv_pv_invest } else { 0.0 };
 
     // Grid & Utility shares for Private
@@ -258,22 +276,27 @@ pub fn run_calculation(
     let ind_converted_cars = (ind_cars - ind_bev) * 1000.0;
     let ind_ev_saving_per_car = 476.51547893050247;
     let ind_ev_invest_per_car = 2353.0 + 550.0;
-    let ind_ev_savings = ind_converted_cars * ind_ev_saving_per_car / 1_000_000.0;
-    let ind_ev_invest = ind_converted_cars * ind_ev_invest_per_car / 1_000_000.0;
+    let ind_ev_active = is_measure_active(measures, "industry", "bev_cars");
+    let ind_ev_savings = if ind_ev_active { ind_converted_cars * ind_ev_saving_per_car / 1_000_000.0 } else { 0.0 };
+    let ind_ev_invest = if ind_ev_active { ind_converted_cars * ind_ev_invest_per_car / 1_000_000.0 } else { 0.0 };
 
     let ind_heat_dmd = inputs["buildings"]["total_heat_dmd_baseline__GWh_per_a"]["industry"]
         .as_f64()
         .unwrap_or(REF_IND_HEAT_DMD);
     let ind_heat_scale = ind_heat_dmd / REF_IND_HEAT_DMD;
-    let ind_heat_savings = 844.0703099005026 * ind_heat_scale;
-    let ind_heat_invest = 17403.870837276238 * ind_heat_scale;
+    let ind_heat_active = is_measure_active(measures, "industry", "heat_demand")
+        || is_measure_active(measures, "industry", "gas_phaseout")
+        || is_measure_active(measures, "industry", "oil_phaseout");
+    let ind_heat_savings = if ind_heat_active { 844.0703099005026 * ind_heat_scale } else { 0.0 };
+    let ind_heat_invest = if ind_heat_active { 17403.870837276238 * ind_heat_scale } else { 0.0 };
 
     let ind_pv_roof = inputs["energy"]["solar_roof_installed__MWp"]["industry"]
         .as_f64()
         .unwrap_or(REF_IND_PV_ROOF);
     let ind_pv_scale = ind_pv_roof / REF_IND_PV_ROOF;
-    let ind_pv_savings = 1274.407607102708 * ind_pv_scale;
-    let ind_pv_invest = 10560.707597792038 * ind_pv_scale;
+    let ind_pv_active = is_measure_active(measures, "industry", "pv_roof");
+    let ind_pv_savings = if ind_pv_active { 1274.407607102708 * ind_pv_scale } else { 0.0 };
+    let ind_pv_invest = if ind_pv_active { 10560.707597792038 * ind_pv_scale } else { 0.0 };
     let ind_pv_roi = if ind_pv_invest > 0.0 { ind_pv_savings / ind_pv_invest } else { 0.0 };
 
     let ind_dyn_tariffs = 56.269505960529266 * ind_pop_scale;
@@ -287,28 +310,34 @@ pub fn run_calculation(
     let ind_total_roi = if ind_total_invest > 0.0 { ind_total_savings / ind_total_invest } else { 0.0 };
 
     // 6. Public Administration
-    let pub_lighting_savings = 55.38941208221395 * pub_pop_scale;
-    let pub_lighting_invest = 179.8752934131737 * pub_pop_scale;
+    let pub_lighting_active = is_measure_active(measures, "public", "street_lighting");
+    let pub_lighting_savings = if pub_lighting_active { 55.38941208221395 * pub_pop_scale } else { 0.0 };
+    let pub_lighting_invest = if pub_lighting_active { 179.8752934131737 * pub_pop_scale } else { 0.0 };
     let pub_lighting_roi = if pub_lighting_invest > 0.0 { pub_lighting_savings / pub_lighting_invest } else { 0.0 };
 
-    let pub_fleet_savings = 18.853241388705545 * pub_pop_scale;
-    let pub_fleet_invest = 108.06432533539079 * pub_pop_scale;
+    let pub_fleet_active = is_measure_active(measures, "public", "bev_cars");
+    let pub_fleet_savings = if pub_fleet_active { 18.853241388705545 * pub_pop_scale } else { 0.0 };
+    let pub_fleet_invest = if pub_fleet_active { 108.06432533539079 * pub_pop_scale } else { 0.0 };
     let pub_fleet_roi = if pub_fleet_invest > 0.0 { pub_fleet_savings / pub_fleet_invest } else { 0.0 };
 
     let pub_heat_dmd = inputs["buildings"]["total_heat_dmd_baseline__GWh_per_a"]["public"]
         .as_f64()
         .unwrap_or(REF_PUB_HEAT_DMD);
     let pub_heat_scale = pub_heat_dmd / REF_PUB_HEAT_DMD;
-    let pub_heat_savings = 17.798675563904194 * pub_heat_scale;
-    let pub_heat_invest = 391.4133923757787 * pub_heat_scale;
+    let pub_heat_active = is_measure_active(measures, "public", "heat_demand")
+        || is_measure_active(measures, "public", "gas_phaseout")
+        || is_measure_active(measures, "public", "oil_phaseout");
+    let pub_heat_savings = if pub_heat_active { 17.798675563904194 * pub_heat_scale } else { 0.0 };
+    let pub_heat_invest = if pub_heat_active { 391.4133923757787 * pub_heat_scale } else { 0.0 };
     let pub_heat_roi = if pub_heat_invest > 0.0 { pub_heat_savings / pub_heat_invest } else { 0.0 };
 
     let pub_pv_roof = inputs["energy"]["solar_roof_installed__MWp"]["public"]
         .as_f64()
         .unwrap_or(REF_PUB_PV_ROOF);
     let pub_pv_scale = pub_pv_roof / REF_PUB_PV_ROOF;
-    let pub_pv_savings = 48.8156131929214 * pub_pv_scale;
-    let pub_pv_invest = 555.8267156732651 * pub_pv_scale;
+    let pub_pv_active = is_measure_active(measures, "public", "pv_roof");
+    let pub_pv_savings = if pub_pv_active { 48.8156131929214 * pub_pv_scale } else { 0.0 };
+    let pub_pv_invest = if pub_pv_active { 555.8267156732651 * pub_pv_scale } else { 0.0 };
     let pub_pv_roi = if pub_pv_invest > 0.0 { pub_pv_savings / pub_pv_invest } else { 0.0 };
 
     let pub_concessions = 250.71848577548928 * pop_scale;
@@ -320,14 +349,16 @@ pub fn run_calculation(
     let pub_total_roi = if pub_total_invest > 0.0 { pub_total_savings / pub_total_invest } else { 0.0 };
 
     // 7. Utility Measures
-    let util_dh_effects = 277.52145292421164 * pop_scale;
-    let util_dh_invest = 5640.5405127790455 * pop_scale;
+    let util_dh_active = is_measure_active(measures, "municipal_utility", "heating_network_capacity");
+    let util_dh_effects = if util_dh_active { 277.52145292421164 * pop_scale } else { 0.0 };
+    let util_dh_invest = if util_dh_active { 5640.5405127790455 * pop_scale } else { 0.0 };
     let util_retail_effects = 190.16646661167653 * pop_scale;
     let util_retail_invest = 0.0;
     let util_grid_effects = 1186.9579421689461 * pop_scale;
     let util_grid_invest = 10517.329906685129 * pop_scale;
-    let util_battery_effects = 253.2298847901776 * pop_scale;
-    let util_battery_invest = -863.0273070488583 * pop_scale;
+    let util_battery_active = is_measure_active(measures, "municipal_utility", "grid_battery");
+    let util_battery_effects = if util_battery_active { 253.2298847901776 * pop_scale } else { 0.0 };
+    let util_battery_invest = if util_battery_active { -863.0273070488583 * pop_scale } else { 0.0 };
     let util_total_effects = 1381.5417579094133 * pop_scale;
     let util_total_invest = 18024.815892733204 * pop_scale;
     let util_total_roi = if util_total_invest > 0.0 { util_total_effects / util_total_invest } else { 0.0 };

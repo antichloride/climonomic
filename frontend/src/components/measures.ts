@@ -55,6 +55,13 @@ export function getMeasureBounds(measureKey: string, scaled: ScaledBaselines): M
           kom: { base: scaled.buildings.oilAreaBase.kommune, max: 0, isInt: true },
         },
       };
+    case 'districtHeating':
+      return {
+        isReduction: false,
+        sectors: {
+          kom: { base: 0, max: 100, isInt: true },
+        },
+      };
     case 'pvRoof':
       return {
         isReduction: false,
@@ -80,6 +87,28 @@ export function getMeasureBounds(measureKey: string, scaled: ScaledBaselines): M
           kom: { base: scaled.energy.windBase.kommune, max: 1200.0 * scaled.popScale },
         },
       };
+    case 'biomass':
+      return {
+        isReduction: false,
+        sectors: {
+          ghd: { base: scaled.energy.biomassBase.ghd, max: 3000.0 * scaled.popScale },
+          kom: { base: scaled.energy.biomassBase.kommune, max: 200.0 * scaled.popScale },
+        },
+      };
+    case 'storage':
+      return {
+        isReduction: false,
+        sectors: {
+          kom: { base: 0, max: 30.0 },
+        },
+      };
+    case 'variableTariffs':
+      return {
+        isReduction: false,
+        sectors: {
+          kom: { base: 10, max: 50, isInt: true },
+        },
+      };
     case 'evCars':
       return {
         isReduction: false,
@@ -87,6 +116,13 @@ export function getMeasureBounds(measureKey: string, scaled: ScaledBaselines): M
           priv: { base: scaled.mobility.evCountBase.private, max: scaled.mobility.carsCountBase.private },
           ghd: { base: scaled.mobility.evCountBase.ghd, max: scaled.mobility.carsCountBase.ghd },
           kom: { base: scaled.mobility.evCountBase.kommune, max: scaled.mobility.carsCountBase.kommune },
+        },
+      };
+    case 'streetLighting':
+      return {
+        isReduction: false,
+        sectors: {
+          kom: { base: scaled.infrastructure.lightingBase, max: 1500.0 * scaled.popScale },
         },
       };
     default:
@@ -101,10 +137,30 @@ export function computeMeasurePercentage(measureKey: string, s: CityBaseline): n
   const current = m[measureKey];
   if (!current) return 0;
 
-  const sec = bounds.sectors.priv || bounds.sectors.ghd;
+  if (measureKey === 'districtHeating') {
+    return Math.max(0, Math.min(100, Math.round(current.shareRenewable ?? 100)));
+  }
+  if (measureKey === 'storage') {
+    const max = 30.0;
+    return Math.max(0, Math.min(100, Math.round(((current.capacityMWh ?? 0) / max) * 100)));
+  }
+  if (measureKey === 'variableTariffs') {
+    const base = 10;
+    const max = 50;
+    return Math.max(0, Math.min(100, Math.round((((current.customerShare ?? 20) - base) / (max - base)) * 100)));
+  }
+  if (measureKey === 'streetLighting') {
+    const base = scaled.infrastructure.lightingBase;
+    const max = 1500.0 * scaled.popScale;
+    const range = max - base;
+    if (range <= 0) return 100;
+    return Math.max(0, Math.min(100, Math.round((((current.targetKommune ?? base) - base) / range) * 100)));
+  }
+
+  const sec = bounds.sectors.priv || bounds.sectors.ghd || bounds.sectors.kom;
   if (!sec) return 0;
 
-  const currentVal = bounds.sectors.priv ? current.targetPrivate : current.targetGHD;
+  const currentVal = bounds.sectors.priv ? current.targetPrivate : (bounds.sectors.ghd ? current.targetGHD : current.targetKommune);
   const range = sec.max - sec.base;
   if (Math.abs(range) < 0.001) return 0;
 
@@ -118,6 +174,26 @@ export function applyMeasurePercentage(measureKey: string, pct: number, s: CityB
   const m = s.measures as any;
   const current = m[measureKey];
   if (!current) return;
+
+  if (measureKey === 'districtHeating') {
+    current.shareRenewable = Math.round(pct);
+    current.capacityGWh = Math.round((pct / 100) * 5456.6 * 10) / 10;
+    return;
+  }
+  if (measureKey === 'storage') {
+    current.capacityMWh = Math.round((pct / 100) * 30.0 * 10) / 10;
+    return;
+  }
+  if (measureKey === 'variableTariffs') {
+    current.customerShare = Math.round(10 + (pct / 100) * 40);
+    return;
+  }
+  if (measureKey === 'streetLighting') {
+    const base = scaled.infrastructure.lightingBase;
+    const max = 1500.0 * scaled.popScale;
+    current.targetKommune = Math.round((base + (pct / 100) * (max - base)) * 100) / 100;
+    return;
+  }
 
   const calcTarget = (sec?: { base: number; max: number; isInt?: boolean }) => {
     if (!sec) return 0;
@@ -297,6 +373,34 @@ export function renderMeasuresCard(): string {
             </div>
             <div id="pills-oilPhaseout">${renderPillsContent(metrics.oilPhaseout)}</div>
           </div>
+
+          <!-- Measure 4: Fernwärme & Wärmenetze -->
+          <div class="measure-card">
+            <div class="measure-header">
+              <label class="measure-toggle">
+                <input type="checkbox" id="chk-district-heating" ${m.districtHeating.enabled ? 'checked' : ''} />
+                Fernwärme & Wärmenetze ⓘ
+              </label>
+            </div>
+            ${renderMeasureSliderHtml('districtHeating', computeMeasurePercentage('districtHeating', s), m.districtHeating.enabled)}
+            <div class="target-row">
+              <span class="target-label">Netzkapazität:</span>
+              <div class="target-inputs">
+                <span>Ziel:</span>
+                <input type="number" id="inp-dh-cap" class="mini-input" step="100" value="${m.districtHeating.capacityGWh}" />
+                <span>GWh / a</span>
+              </div>
+            </div>
+            <div class="target-row">
+              <span class="target-label">Erneuerbare:</span>
+              <div class="target-inputs">
+                <span>Anteil:</span>
+                <input type="number" id="inp-dh-ren" class="mini-input" min="0" max="100" value="${m.districtHeating.shareRenewable}" />
+                <span>%</span>
+              </div>
+            </div>
+            <div id="pills-districtHeating">${renderPillsContent(metrics.districtHeating)}</div>
+          </div>
         </div>
       </div>
 
@@ -397,6 +501,74 @@ export function renderMeasuresCard(): string {
             </div>
             <div id="pills-wind">${renderPillsContent(metrics.wind)}</div>
           </div>
+
+          <!-- Biomasse & Biogas -->
+          <div class="measure-card">
+            <div class="measure-header">
+              <label class="measure-toggle">
+                <input type="checkbox" id="chk-biomass" ${m.biomass.enabled ? 'checked' : ''} />
+                Biomasse & Biogas ausbauen ⓘ
+              </label>
+            </div>
+            ${renderMeasureSliderHtml('biomass', computeMeasurePercentage('biomass', s), m.biomass.enabled)}
+            <div class="target-row">
+              <span class="target-label">GHD:</span>
+              <div class="target-inputs">
+                <span>Von ${scaled.energy.biomassBase.ghd.toFixed(2)} auf</span>
+                <input type="number" id="inp-bio-ghd" class="mini-input" step="0.5" value="${m.biomass.targetGHD}" />
+                <span>MWp</span>
+              </div>
+            </div>
+            <div class="target-row">
+              <span class="target-label">Kommune:</span>
+              <div class="target-inputs">
+                <span>Von ${scaled.energy.biomassBase.kommune.toFixed(2)} auf</span>
+                <input type="number" id="inp-bio-kom" class="mini-input" step="0.05" value="${m.biomass.targetKommune}" />
+                <span>MWp</span>
+              </div>
+            </div>
+            <div id="pills-biomass">${renderPillsContent(metrics.biomass)}</div>
+          </div>
+
+          <!-- Großbatteriespeicher -->
+          <div class="measure-card">
+            <div class="measure-header">
+              <label class="measure-toggle">
+                <input type="checkbox" id="chk-storage" ${m.storage.enabled ? 'checked' : ''} />
+                Großbatteriespeicher ⓘ
+              </label>
+            </div>
+            ${renderMeasureSliderHtml('storage', computeMeasurePercentage('storage', s), m.storage.enabled)}
+            <div class="target-row">
+              <span class="target-label">Stadtwerke:</span>
+              <div class="target-inputs">
+                <span>Kapazität:</span>
+                <input type="number" id="inp-stor-cap" class="mini-input" step="5" value="${m.storage.capacityMWh}" />
+                <span>MWh</span>
+              </div>
+            </div>
+            <div id="pills-storage">${renderPillsContent(metrics.storage)}</div>
+          </div>
+
+          <!-- Dynamische Stromtarife -->
+          <div class="measure-card">
+            <div class="measure-header">
+              <label class="measure-toggle">
+                <input type="checkbox" id="chk-tariffs" ${m.variableTariffs.enabled ? 'checked' : ''} />
+                Dynamische Stromtarife ⓘ
+              </label>
+            </div>
+            ${renderMeasureSliderHtml('variableTariffs', computeMeasurePercentage('variableTariffs', s), m.variableTariffs.enabled)}
+            <div class="target-row">
+              <span class="target-label">Kundenanteil:</span>
+              <div class="target-inputs">
+                <span>Ziel:</span>
+                <input type="number" id="inp-tar-share" class="mini-input" step="5" min="0" max="100" value="${m.variableTariffs.customerShare}" />
+                <span>%</span>
+              </div>
+            </div>
+            <div id="pills-variableTariffs">${renderPillsContent(metrics.variableTariffs)}</div>
+          </div>
         </div>
       </div>
 
@@ -443,6 +615,34 @@ export function renderMeasuresCard(): string {
           </div>
         </div>
       </div>
+
+      <!-- SECTOR 4: KOMMUNALE INFRASTRUKTUR -->
+      <div class="sector-container">
+        <div class="sector-header sector-infrastructure">
+          <span>🏛️ Kommunale Infrastruktur</span>
+        </div>
+        <div class="sector-grid">
+          <!-- LED Straßenbeleuchtung -->
+          <div class="measure-card">
+            <div class="measure-header">
+              <label class="measure-toggle">
+                <input type="checkbox" id="chk-lighting" ${m.streetLighting.enabled ? 'checked' : ''} />
+                LED Straßenbeleuchtung ⓘ
+              </label>
+            </div>
+            ${renderMeasureSliderHtml('streetLighting', computeMeasurePercentage('streetLighting', s), m.streetLighting.enabled)}
+            <div class="target-row">
+              <span class="target-label">Kommune:</span>
+              <div class="target-inputs">
+                <span>Von ${scaled.infrastructure.lightingBase.toFixed(2)} auf</span>
+                <input type="number" id="inp-light-kom" class="mini-input" step="0.1" value="${m.streetLighting.targetKommune}" />
+                <span>1.000 Lichtpunkte</span>
+              </div>
+            </div>
+            <div id="pills-streetLighting">${renderPillsContent(metrics.streetLighting)}</div>
+          </div>
+        </div>
+      </div>
     </section>
   `;
 }
@@ -460,10 +660,15 @@ export function updateMeasurePills() {
   setHtml('pills-heatDmd', metrics.heatDmd);
   setHtml('pills-gasPhaseout', metrics.gasPhaseout);
   setHtml('pills-oilPhaseout', metrics.oilPhaseout);
+  setHtml('pills-districtHeating', metrics.districtHeating);
   setHtml('pills-pvRoof', metrics.pvRoof);
   setHtml('pills-pvOpen', metrics.pvOpen);
   setHtml('pills-wind', metrics.wind);
+  setHtml('pills-biomass', metrics.biomass);
+  setHtml('pills-storage', metrics.storage);
+  setHtml('pills-variableTariffs', metrics.variableTariffs);
   setHtml('pills-evCars', metrics.evCars);
+  setHtml('pills-streetLighting', metrics.streetLighting);
 }
 
 function syncSingleMeasureSlider(key: string) {
@@ -518,6 +723,10 @@ export function syncMeasuresInputsFromState() {
   setNum('inp-oil-ghd', m.oilPhaseout.targetGHD);
   setNum('inp-oil-kom', m.oilPhaseout.targetKommune);
 
+  setChk('chk-district-heating', m.districtHeating.enabled);
+  setNum('inp-dh-cap', m.districtHeating.capacityGWh);
+  setNum('inp-dh-ren', m.districtHeating.shareRenewable);
+
   setChk('chk-pv-roof', m.pvRoof.enabled);
   setNum('inp-pvr-priv', m.pvRoof.targetPrivate);
   setNum('inp-pvr-ghd', m.pvRoof.targetGHD);
@@ -531,15 +740,29 @@ export function syncMeasuresInputsFromState() {
   setNum('inp-wnd-ghd', m.wind.targetGHD);
   setNum('inp-wnd-kom', m.wind.targetKommune);
 
+  setChk('chk-biomass', m.biomass.enabled);
+  setNum('inp-bio-ghd', m.biomass.targetGHD);
+  setNum('inp-bio-kom', m.biomass.targetKommune);
+
+  setChk('chk-storage', m.storage.enabled);
+  setNum('inp-stor-cap', m.storage.capacityMWh);
+
+  setChk('chk-tariffs', m.variableTariffs.enabled);
+  setNum('inp-tar-share', m.variableTariffs.customerShare);
+
   setChk('chk-ev', m.evCars.enabled);
   setNum('inp-ev-priv', m.evCars.targetPrivate);
   setNum('inp-ev-ghd', m.evCars.targetGHD);
   setNum('inp-ev-kom', m.evCars.targetKommune);
 
+  setChk('chk-lighting', m.streetLighting.enabled);
+  setNum('inp-light-kom', m.streetLighting.targetKommune);
+
   // Sync all sliders
   [
-    'heatDmd', 'gasPhaseout', 'oilPhaseout',
-    'pvRoof', 'pvOpen', 'wind', 'evCars'
+    'heatDmd', 'gasPhaseout', 'oilPhaseout', 'districtHeating',
+    'pvRoof', 'pvOpen', 'wind', 'biomass', 'storage', 'variableTariffs',
+    'evCars', 'streetLighting'
   ].forEach(syncSingleMeasureSlider);
 }
 
@@ -602,17 +825,33 @@ export function setupMeasuresListeners() {
         const m = s.measures as any;
         const current = m[key];
         if (current) {
-          if (inputIds[0]) {
-            const el = document.getElementById(inputIds[0]!) as HTMLInputElement | null;
-            if (el && document.activeElement !== el) el.value = current.targetPrivate?.toString() ?? '';
-          }
-          if (inputIds[1]) {
-            const el = document.getElementById(inputIds[1]!) as HTMLInputElement | null;
-            if (el && document.activeElement !== el) el.value = current.targetGHD?.toString() ?? '';
-          }
-          if (inputIds[2]) {
-            const el = document.getElementById(inputIds[2]!) as HTMLInputElement | null;
-            if (el && document.activeElement !== el) el.value = current.targetKommune?.toString() ?? '';
+          if (key === 'districtHeating') {
+            const elCap = document.getElementById('inp-dh-cap') as HTMLInputElement | null;
+            if (elCap && document.activeElement !== elCap) elCap.value = current.capacityGWh?.toString() ?? '';
+            const elRen = document.getElementById('inp-dh-ren') as HTMLInputElement | null;
+            if (elRen && document.activeElement !== elRen) elRen.value = current.shareRenewable?.toString() ?? '';
+          } else if (key === 'storage') {
+            const elStor = document.getElementById('inp-stor-cap') as HTMLInputElement | null;
+            if (elStor && document.activeElement !== elStor) elStor.value = current.capacityMWh?.toString() ?? '';
+          } else if (key === 'variableTariffs') {
+            const elTar = document.getElementById('inp-tar-share') as HTMLInputElement | null;
+            if (elTar && document.activeElement !== elTar) elTar.value = current.customerShare?.toString() ?? '';
+          } else if (key === 'streetLighting') {
+            const elLight = document.getElementById('inp-light-kom') as HTMLInputElement | null;
+            if (elLight && document.activeElement !== elLight) elLight.value = current.targetKommune?.toString() ?? '';
+          } else {
+            if (inputIds[0]) {
+              const el = document.getElementById(inputIds[0]!) as HTMLInputElement | null;
+              if (el && document.activeElement !== el) el.value = current.targetPrivate?.toString() ?? '';
+            }
+            if (inputIds[1]) {
+              const el = document.getElementById(inputIds[1]!) as HTMLInputElement | null;
+              if (el && document.activeElement !== el) el.value = current.targetGHD?.toString() ?? '';
+            }
+            if (inputIds[2]) {
+              const el = document.getElementById(inputIds[2]!) as HTMLInputElement | null;
+              if (el && document.activeElement !== el) el.value = current.targetKommune?.toString() ?? '';
+            }
           }
         }
       });
@@ -630,14 +869,19 @@ export function setupMeasuresListeners() {
     }
   };
 
-  // Bind 7 Excel-aligned Measure Sliders
+  // Bind 12 Excel-aligned Measure Sliders
   bindSlider('heatDmd', 'chk-heat-dmd', ['inp-hd-priv', 'inp-hd-ghd', 'inp-hd-kom']);
   bindSlider('gasPhaseout', 'chk-gas', ['inp-gas-priv', 'inp-gas-ghd', 'inp-gas-kom']);
   bindSlider('oilPhaseout', 'chk-oil', ['inp-oil-priv', 'inp-oil-ghd', 'inp-oil-kom']);
+  bindSlider('districtHeating', 'chk-district-heating', ['inp-dh-cap', 'inp-dh-ren', null]);
   bindSlider('pvRoof', 'chk-pv-roof', ['inp-pvr-priv', 'inp-pvr-ghd', 'inp-pvr-kom']);
   bindSlider('pvOpen', 'chk-pv-open', [null, 'inp-pvo-ghd', 'inp-pvo-kom']);
   bindSlider('wind', 'chk-wind', [null, 'inp-wnd-ghd', 'inp-wnd-kom']);
+  bindSlider('biomass', 'chk-biomass', [null, 'inp-bio-ghd', 'inp-bio-kom']);
+  bindSlider('storage', 'chk-storage', [null, null, 'inp-stor-cap']);
+  bindSlider('variableTariffs', 'chk-tariffs', [null, null, 'inp-tar-share']);
   bindSlider('evCars', 'chk-ev', ['inp-ev-priv', 'inp-ev-ghd', 'inp-ev-kom']);
+  bindSlider('streetLighting', 'chk-lighting', [null, null, 'inp-light-kom']);
 
   // Direct Numeric Input Handlers (also sync sliders)
   // Heat Demand
@@ -676,6 +920,17 @@ export function setupMeasuresListeners() {
   };
   ['inp-oil-priv', 'inp-oil-ghd', 'inp-oil-kom'].forEach(id => bind(id, updateOil));
 
+  // District Heating
+  const updateDh = () => {
+    store.updateState(s => {
+      s.measures.districtHeating.enabled = chkVal('chk-district-heating');
+      s.measures.districtHeating.capacityGWh = numVal('inp-dh-cap');
+      s.measures.districtHeating.shareRenewable = numVal('inp-dh-ren');
+    });
+    syncSingleMeasureSlider('districtHeating');
+  };
+  ['inp-dh-cap', 'inp-dh-ren'].forEach(id => bind(id, updateDh));
+
   // PV Roof
   const updatePvR = () => {
     store.updateState(s => {
@@ -710,6 +965,37 @@ export function setupMeasuresListeners() {
   };
   ['inp-wnd-ghd', 'inp-wnd-kom'].forEach(id => bind(id, updateWnd));
 
+  // Biomass
+  const updateBio = () => {
+    store.updateState(s => {
+      s.measures.biomass.enabled = chkVal('chk-biomass');
+      s.measures.biomass.targetGHD = numVal('inp-bio-ghd');
+      s.measures.biomass.targetKommune = numVal('inp-bio-kom');
+    });
+    syncSingleMeasureSlider('biomass');
+  };
+  ['inp-bio-ghd', 'inp-bio-kom'].forEach(id => bind(id, updateBio));
+
+  // Storage
+  const updateStorage = () => {
+    store.updateState(s => {
+      s.measures.storage.enabled = chkVal('chk-storage');
+      s.measures.storage.capacityMWh = numVal('inp-stor-cap');
+    });
+    syncSingleMeasureSlider('storage');
+  };
+  bind('inp-stor-cap', updateStorage);
+
+  // Variable Tariffs
+  const updateTariffs = () => {
+    store.updateState(s => {
+      s.measures.variableTariffs.enabled = chkVal('chk-tariffs');
+      s.measures.variableTariffs.customerShare = numVal('inp-tar-share');
+    });
+    syncSingleMeasureSlider('variableTariffs');
+  };
+  bind('inp-tar-share', updateTariffs);
+
   // EV
   const updateEv = () => {
     store.updateState(s => {
@@ -721,4 +1007,14 @@ export function setupMeasuresListeners() {
     syncSingleMeasureSlider('evCars');
   };
   ['inp-ev-priv', 'inp-ev-ghd', 'inp-ev-kom'].forEach(id => bind(id, updateEv));
+
+  // Street Lighting
+  const updateLighting = () => {
+    store.updateState(s => {
+      s.measures.streetLighting.enabled = chkVal('chk-lighting');
+      s.measures.streetLighting.targetKommune = numVal('inp-light-kom');
+    });
+    syncSingleMeasureSlider('streetLighting');
+  };
+  bind('inp-light-kom', updateLighting);
 }

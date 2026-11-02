@@ -449,6 +449,10 @@
   background: linear-gradient(135deg, #0D9488 0%, #0F766E 100%);
 }
 
+.sector-infrastructure {
+  background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%);
+}
+
 .sector-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));

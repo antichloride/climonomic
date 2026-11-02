@@ -92,6 +92,15 @@ describe('Excel Field Verification Suite', () => {
     expect(state.measures.pvRoof.targetPrivate).toBeCloseTo(fixture.measures.private.pv_roof.target_installed__MWp, 0);
     expect(state.measures.evCars.targetPrivate).toBeCloseTo(fixture.measures.private.mobility.bev_count_target__k__, 0);
 
+    // Verify newly supported measures and their settings
+    expect(state.measures.districtHeating.capacityGWh).toBeCloseTo(5456.6, 0);
+    expect(state.measures.districtHeating.shareRenewable).toBe(100);
+    expect(state.measures.biomass.targetGHD).toBeCloseTo(2.35, 2);
+    expect(state.measures.biomass.targetKommune).toBeCloseTo(0.12, 2);
+    expect(state.measures.storage.capacityMWh).toBe(20.0);
+    expect(state.measures.variableTariffs.customerShare).toBe(20);
+    expect(state.measures.streetLighting.targetKommune).toBeCloseTo(1.21, 2);
+
     // Ensure getBaselineValueForId with state.extractorInputs returns accurate values
     const carVal = getBaselineValueForId('mobility/inputs/n_cars__k__/private', state.population, state.extractorInputs);
     expect(carVal).toBeCloseTo(5.87, 1);
@@ -173,7 +182,19 @@ describe('Excel Field Verification Suite', () => {
     expect(m.municipal_utility.district_heating_target_sources_part.river_heat).toBe(0.25);
     expect(m.municipal_utility.district_heating_target_sources_part.geothermal_shallow).toBe(0.25);
 
-    // 5. Total items list extracted
+    // 5. Verify measure settings (ist, target, start_year, end_year, active)
+    expect(m.fossil_prices.petrol.active).toBe(true);
+    expect(m.fossil_prices.petrol.ist).toBeCloseTo(1.67, 2);
+    expect(m.private.heat_demand.settings.active).toBe(true);
+    expect(m.private.heat_demand.settings.start_year).toBe(2026);
+    expect(m.private.heat_demand.settings.end_year).toBe(2040);
+    expect(m.industry.biomass.active).toBe(true);
+    expect(m.municipal_utility.grid_battery.active).toBe(true);
+    expect(m.municipal_utility.variable_tariffs.active).toBe(true);
+    expect(m.municipal_utility.heating_network_capacity.active).toBe(true);
+    expect(m.public.street_lighting.active).toBe(true);
+
+    // 6. Total items list extracted
     expect(m.items.length).toBe(80);
     expect(m.items[0]).toHaveProperty('name');
     expect(m.items[0]).toHaveProperty('target');

@@ -167,13 +167,6 @@ export const MEASURE_DEFINITIONS: Record<
         });
       if (dKom > 0) {
         list.push({
-          id: 'm_hd_sch',
-          inputId: 'buildings/inputs/heat_dmd__k__W_h_per_m2_a/schools',
-          startYear,
-          endYear,
-          delta: dKom,
-        });
-        list.push({
           id: 'm_hd_pub',
           inputId: 'buildings/inputs/heat_dmd__k__W_h_per_m2_a/public',
           startYear,
@@ -409,6 +402,31 @@ export const MEASURE_DEFINITIONS: Record<
         });
       return list;
     },
+  },
+  districtHeating: {
+    id: 'districtHeating',
+    name: 'Fernwärme & Wärmenetze ausbauen',
+    getInterventions: () => [],
+  },
+  biomass: {
+    id: 'biomass',
+    name: 'Biomasse & Biogas ausbauen',
+    getInterventions: () => [],
+  },
+  storage: {
+    id: 'storage',
+    name: 'Großbatteriespeicher',
+    getInterventions: () => [],
+  },
+  variableTariffs: {
+    id: 'variableTariffs',
+    name: 'Variable & Dynamische Tarife',
+    getInterventions: () => [],
+  },
+  streetLighting: {
+    id: 'streetLighting',
+    name: 'LED Straßenbeleuchtung',
+    getInterventions: () => [],
   },
 };
 
@@ -1020,6 +1038,26 @@ export function runSimulation(state: CityBaseline): SimulationOutput {
       investMio = 6122.0 * popScaleRatio;
       directEffectMioYear = 568.0 * popScaleRatio;
       roiPct = 9.28;
+    } else if (key === 'districtHeating') {
+      investMio = 5640.54 * popScaleRatio;
+      directEffectMioYear = 277.52 * popScaleRatio;
+      roiPct = 4.92;
+    } else if (key === 'biomass') {
+      investMio = 5275.39 * popScaleRatio;
+      directEffectMioYear = 1436.95 * popScaleRatio;
+      roiPct = 27.24;
+    } else if (key === 'storage') {
+      investMio = 863.03 * popScaleRatio;
+      directEffectMioYear = 253.23 * popScaleRatio;
+      roiPct = 29.34;
+    } else if (key === 'variableTariffs') {
+      investMio = 0.0;
+      directEffectMioYear = 29.73 * popScaleRatio;
+      roiPct = 0.0;
+    } else if (key === 'streetLighting') {
+      investMio = 179.88 * popScaleRatio;
+      directEffectMioYear = 55.39 * popScaleRatio;
+      roiPct = 30.79;
     } else {
       roiPct = investMio > 0 ? (directEffectMioYear / investMio) * 100 : 0;
     }
